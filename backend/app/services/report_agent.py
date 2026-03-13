@@ -29,7 +29,7 @@ from .zep_tools import (
     InterviewResult
 )
 
-logger = get_logger('mirofish.report_agent')
+logger = get_logger('koreapolicysim.report_agent')
 
 
 class ReportLogger:
@@ -352,8 +352,8 @@ class ReportConsoleLogger:
         
         # 添加到 report_agent 相关的 logger
         loggers_to_attach = [
-            'mirofish.report_agent',
-            'mirofish.zep_tools',
+            'koreapolicysim.report_agent',
+            'koreapolicysim.zep_tools',
         ]
         
         for logger_name in loggers_to_attach:
@@ -368,8 +368,8 @@ class ReportConsoleLogger:
         
         if self._file_handler:
             loggers_to_detach = [
-                'mirofish.report_agent',
-                'mirofish.zep_tools',
+                'koreapolicysim.report_agent',
+                'koreapolicysim.zep_tools',
             ]
             
             for logger_name in loggers_to_detach:
@@ -447,6 +447,7 @@ class Report:
     status: ReportStatus
     outline: Optional[ReportOutline] = None
     markdown_content: str = ""
+    support_dashboard: Optional[Dict[str, Any]] = None
     created_at: str = ""
     completed_at: str = ""
     error: Optional[str] = None
@@ -460,6 +461,7 @@ class Report:
             "status": self.status.value,
             "outline": self.outline.to_dict() if self.outline else None,
             "markdown_content": self.markdown_content,
+            "support_dashboard": self.support_dashboard,
             "created_at": self.created_at,
             "completed_at": self.completed_at,
             "error": self.error
@@ -2490,6 +2492,7 @@ class ReportManager:
             status=ReportStatus(data['status']),
             outline=outline,
             markdown_content=markdown_content,
+            support_dashboard=data.get('support_dashboard'),
             created_at=data.get('created_at', ''),
             completed_at=data.get('completed_at', ''),
             error=data.get('error')

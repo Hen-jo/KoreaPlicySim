@@ -17,8 +17,11 @@ from ..utils.logger import get_logger
 from .zep_entity_reader import ZepEntityReader, FilteredEntities
 from .oasis_profile_generator import OasisProfileGenerator, OasisAgentProfile
 from .simulation_config_generator import SimulationConfigGenerator, SimulationParameters
+from .simulation_presets import normalize_preset
+from .support_dashboard_generator import SupportDashboardGenerator
+from ..models.project import ProjectManager
 
-logger = get_logger('mirofish.simulation')
+logger = get_logger('koreapolicysim.simulation')
 
 
 class SimulationStatus(str, Enum):
@@ -45,6 +48,13 @@ class SimulationState:
     simulation_id: str
     project_id: str
     graph_id: str
+    simulation_preset: str = "generic_social"
+    race_type: str = "seoul_mayor"
+    target_city: str = "Seoul"
+    target_districts: List[str] = field(default_factory=list)
+    candidate_profiles: List[Dict[str, Any]] = field(default_factory=list)
+    campaign_action_brief: str = ""
+    support_dashboard: Optional[Dict[str, Any]] = None
     
     # 平台启用状态
     enable_twitter: bool = True
@@ -80,6 +90,13 @@ class SimulationState:
             "simulation_id": self.simulation_id,
             "project_id": self.project_id,
             "graph_id": self.graph_id,
+            "simulation_preset": self.simulation_preset,
+            "race_type": self.race_type,
+            "target_city": self.target_city,
+            "target_districts": self.target_districts,
+            "candidate_profiles": self.candidate_profiles,
+            "campaign_action_brief": self.campaign_action_brief,
+            "support_dashboard": self.support_dashboard,
             "enable_twitter": self.enable_twitter,
             "enable_reddit": self.enable_reddit,
             "status": self.status.value,
@@ -102,6 +119,13 @@ class SimulationState:
             "simulation_id": self.simulation_id,
             "project_id": self.project_id,
             "graph_id": self.graph_id,
+            "simulation_preset": self.simulation_preset,
+            "race_type": self.race_type,
+            "target_city": self.target_city,
+            "target_districts": self.target_districts,
+            "candidate_profiles": self.candidate_profiles,
+            "campaign_action_brief": self.campaign_action_brief,
+            "support_dashboard": self.support_dashboard,
             "status": self.status.value,
             "entities_count": self.entities_count,
             "profiles_count": self.profiles_count,
@@ -171,6 +195,13 @@ class SimulationManager:
             simulation_id=simulation_id,
             project_id=data.get("project_id", ""),
             graph_id=data.get("graph_id", ""),
+            simulation_preset=data.get("simulation_preset", "generic_social"),
+            race_type=data.get("race_type", "seoul_mayor"),
+            target_city=data.get("target_city", "Seoul"),
+            target_districts=data.get("target_districts", []),
+            candidate_profiles=data.get("candidate_profiles", []),
+            campaign_action_brief=data.get("campaign_action_brief", ""),
+            support_dashboard=data.get("support_dashboard"),
             enable_twitter=data.get("enable_twitter", True),
             enable_reddit=data.get("enable_reddit", True),
             status=SimulationStatus(data.get("status", "created")),
@@ -194,6 +225,7 @@ class SimulationManager:
         self,
         project_id: str,
         graph_id: str,
+        simulation_preset: str = "generic_social",
         enable_twitter: bool = True,
         enable_reddit: bool = True,
     ) -> SimulationState:
@@ -216,10 +248,22 @@ class SimulationManager:
             simulation_id=simulation_id,
             project_id=project_id,
             graph_id=graph_id,
+            simulation_preset=normalize_preset(simulation_preset),
+            race_type="seoul_mayor",
+            target_city="Seoul",
             enable_twitter=enable_twitter,
             enable_reddit=enable_reddit,
             status=SimulationStatus.CREATED,
         )
+
+        project = ProjectManager.get_project(project_id)
+        if project:
+            state.race_type = project.race_type or "seoul_mayor"
+            state.target_city = project.target_city or "Seoul"
+            state.target_districts = project.target_districts or []
+            state.candidate_profiles = project.candidate_profiles or []
+            state.campaign_action_brief = project.campaign_action_brief or ""
+            state.support_dashboard = project.support_dashboard
         
         self._save_simulation_state(state)
         logger.info(f"创建模拟: {simulation_id}, project={project_id}, graph={graph_id}")
@@ -231,6 +275,7 @@ class SimulationManager:
         simulation_id: str,
         simulation_requirement: str,
         document_text: str,
+        simulation_preset: str = "generic_social",
         defined_entity_types: Optional[List[str]] = None,
         use_llm_for_profiles: bool = True,
         progress_callback: Optional[callable] = None,
@@ -313,6 +358,7 @@ class SimulationManager:
             
             # 传入graph_id以启用Zep检索功能，获取更丰富的上下文
             generator = OasisProfileGenerator(graph_id=state.graph_id)
+            generator.set_simulation_preset(simulation_preset or state.simulation_preset)
             
             def profile_progress(current, total, msg):
                 if progress_callback:
@@ -405,6 +451,7 @@ class SimulationManager:
                 graph_id=state.graph_id,
                 simulation_requirement=simulation_requirement,
                 document_text=document_text,
+                simulation_preset=simulation_preset or state.simulation_preset,
                 entities=filtered.entities,
                 enable_twitter=state.enable_twitter,
                 enable_reddit=state.enable_reddit
@@ -425,6 +472,22 @@ class SimulationManager:
             
             state.config_generated = True
             state.config_reasoning = sim_params.generation_reasoning
+
+            project = ProjectManager.get_project(state.project_id)
+            if project:
+                dashboard_generator = SupportDashboardGenerator()
+                state.support_dashboard = dashboard_generator.generate(
+                    simulation_requirement=simulation_requirement,
+                    document_text=document_text,
+                    race_type=project.race_type or state.race_type,
+                    target_city=project.target_city or state.target_city,
+                    target_districts=project.target_districts or state.target_districts,
+                    candidate_profiles=project.candidate_profiles or state.candidate_profiles,
+                    campaign_action_brief=project.campaign_action_brief or state.campaign_action_brief,
+                    entity_types=state.entity_types,
+                )
+                project.support_dashboard = state.support_dashboard
+                ProjectManager.save_project(project)
             
             if progress_callback:
                 progress_callback(
@@ -519,7 +582,7 @@ class SimulationManager:
                 "parallel": f"python {scripts_dir}/run_parallel_simulation.py --config {config_path}",
             },
             "instructions": (
-                f"1. 激活conda环境: conda activate MiroFish\n"
+                f"1. 激活conda环境: conda activate KoreaPolicySim\n"
                 f"2. 运行模拟 (脚本位于 {scripts_dir}):\n"
                 f"   - 单独运行Twitter: python {scripts_dir}/run_twitter_simulation.py --config {config_path}\n"
                 f"   - 单独运行Reddit: python {scripts_dir}/run_reddit_simulation.py --config {config_path}\n"

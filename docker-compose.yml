@@ -1,9 +1,9 @@
 services:
-  mirofish:
-    image: ghcr.io/666ghj/mirofish:latest
-    # 加速镜像（如拉取缓慢可替换上方地址）
-    # image: ghcr.nju.edu.cn/666ghj/mirofish:latest
-    container_name: mirofish
+  koreapolicysim:
+    image: ghcr.io/666ghj/koreapolicysim:latest
+    # Mirror image (use this if pulling the default image is slow)
+    # image: ghcr.nju.edu.cn/666ghj/koreapolicysim:latest
+    container_name: koreapolicysim
     env_file:
       - .env
     ports:

@@ -6,6 +6,7 @@
 import json
 from typing import Dict, Any, List, Optional
 from ..utils.llm_client import LLMClient
+from .simulation_presets import get_preset_context
 
 
 # 本体生成的系统提示词
@@ -155,6 +156,30 @@ B. **具体类型（8个，根据文本内容设计）**：
 """
 
 
+def build_ontology_system_prompt(simulation_preset: str) -> str:
+    preset = get_preset_context(simulation_preset)
+    prompt = (
+        f"{ONTOLOGY_SYSTEM_PROMPT}\n\n"
+        "## 当前模拟预设\n"
+        f"- 预设标识: {preset['key']}\n"
+        f"- 预设名称: {preset['label']}\n"
+        f"- 本体设计重点: {preset['ontology_focus']}\n"
+        "如果预设与原文存在张力，优先保留原文事实，但类型设计要服务于该预设场景。"
+    )
+    if preset["key"] == "korea_society_policy":
+        prompt += (
+            "\n\n## 韩国政治模拟附加要求\n"
+            "- 若文本涉及首尔政治、选举或公约，请优先保留 Candidate、PoliticalParty、"
+            "DistrictVoter、SeoulDistrictGovernment、Pollster、CivicGroup、MediaOutlet、"
+            "SocialMediaPlatform 等可发声实体。\n"
+            "- 尽量让实体与关系支持比较首尔不同区/选区之间的态度差异。\n"
+            "- 关系设计应支持政策宣布、公约支持/反对、媒体报道、民调变化、地区回应、"
+            "竞选攻击或澄清等过程。\n"
+            "- analysis_summary 需点出可能影响支持率/好感度变化的主要因素。"
+        )
+    return prompt
+
+
 class OntologyGenerator:
     """
     本体生成器
@@ -168,7 +193,8 @@ class OntologyGenerator:
         self,
         document_texts: List[str],
         simulation_requirement: str,
-        additional_context: Optional[str] = None
+        additional_context: Optional[str] = None,
+        simulation_preset: str = "generic_social"
     ) -> Dict[str, Any]:
         """
         生成本体定义
@@ -185,11 +211,12 @@ class OntologyGenerator:
         user_message = self._build_user_message(
             document_texts, 
             simulation_requirement,
-            additional_context
+            additional_context,
+            simulation_preset
         )
         
         messages = [
-            {"role": "system", "content": ONTOLOGY_SYSTEM_PROMPT},
+            {"role": "system", "content": build_ontology_system_prompt(simulation_preset)},
             {"role": "user", "content": user_message}
         ]
         
@@ -212,9 +239,11 @@ class OntologyGenerator:
         self,
         document_texts: List[str],
         simulation_requirement: str,
-        additional_context: Optional[str]
+        additional_context: Optional[str],
+        simulation_preset: str
     ) -> str:
         """构建用户消息"""
+        preset = get_preset_context(simulation_preset)
         
         # 合并文本
         combined_text = "\n\n---\n\n".join(document_texts)
@@ -228,6 +257,12 @@ class OntologyGenerator:
         message = f"""## 模拟需求
 
 {simulation_requirement}
+
+## 当前模拟预设
+
+- 预设标识: {preset['key']}
+- 预设名称: {preset['label']}
+- 本体重点: {preset['ontology_focus']}
 
 ## 文档内容
 
@@ -250,6 +285,12 @@ class OntologyGenerator:
 3. 前8个是根据文本内容设计的具体类型
 4. 所有实体类型必须是现实中可以发声的主体，不能是抽象概念
 5. 属性名不能使用 name、uuid、group_id 等保留字，用 full_name、org_name 等替代
+6. 如果是韩国政治与政策反应模拟预设，优先体现首尔市级/区级/选区级差异、候选人、政党、选民群体、媒体、民调与政策执行机构
+"""
+        if preset["key"] == "korea_society_policy":
+            message += """
+7. 如果需求或文档涉及候选人、公约、政策 발표、争议、支持率、民调，优先让类型设计服务于“哪些区、哪些选民群体会转向支持或反对”的模拟
+8. 如果没有明确地区，默认场景理解为首尔，并尽量允许扩展到 특정 구 또는 선거구
 """
         
         return message
@@ -357,7 +398,7 @@ class OntologyGenerator:
         code_lines = [
             '"""',
             '自定义实体类型定义',
-            '由MiroFish自动生成，用于社会舆论模拟',
+            '由KoreaPolicySim自动生成，用于社会舆论模拟',
             '"""',
             '',
             'from pydantic import Field',
@@ -450,4 +491,3 @@ class OntologyGenerator:
         code_lines.append('}')
         
         return '\n'.join(code_lines)
-

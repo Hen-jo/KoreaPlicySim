@@ -1,45 +1,113 @@
 <template>
   <div class="home-container">
-    <!-- 顶部导航栏 -->
+    <!-- Top navigation -->
     <nav class="navbar">
-      <div class="nav-brand">MIROFISH</div>
-      <div class="nav-links">
-        <a href="https://github.com/666ghj/MiroFish" target="_blank" class="github-link">
-          访问我们的Github主页 <span class="arrow">↗</span>
-        </a>
-      </div>
+      <div class="nav-brand">KOREAPOLICYSIM</div>
     </nav>
 
     <div class="main-content">
-      <!-- 上半部分：Hero 区域 -->
+      <!-- Top half: Hero -->
       <section class="hero-section">
         <div class="hero-left">
           <div class="tag-row">
-            <span class="orange-tag">简洁通用的群体智能引擎</span>
-            <span class="version-text">/ v0.1-预览版</span>
+            <span class="orange-tag">서울 시장 선거운동 시뮬레이터</span>
+            <span class="version-text">/ v0.1 preview</span>
           </div>
           
           <h1 class="main-title">
-            上传任意报告<br>
-            <span class="gradient-text">即刻推演未来</span>
+            공약문, 현안 브리프, 여론 메모를 올리고<br>
+            <span class="gradient-text">서울 전역의 지지율 변화를 시뮬레이션하세요</span>
           </h1>
           
           <div class="hero-desc">
             <p>
-              即使只有一段文字，<span class="highlight-bold">MiroFish</span> 也能基于其中的现实种子，全自动生成与之对应的至多<span class="highlight-orange">百万级Agent</span>构成的平行世界。通过上帝视角注入变量，在复杂的群体交互中寻找动态环境下的<span class="highlight-code">“局部最优解”</span>
+              <span class="highlight-bold">KoreaPolicySim</span>은 짧은 문단 하나만 있어도 한국 정치 문서, 정책 초안, 선거 공약, 지역 현안을 바탕으로 시민 반응 환경을 시뮬레이션합니다. 상단 전략 보드에서 <span class="highlight-orange">서울 전체, 특정 구, 주요 유권자 블록</span>별로 지지, 불신, 호감도가 어떻게 움직일지 관찰할 수 있습니다.
             </p>
             <p class="slogan-text">
-              让未来在 Agent 群中预演，让决策在百战后胜出<span class="blinking-cursor">_</span>
+              도시가 반응하기 전에 선거 전략을 먼저 시험해보세요<span class="blinking-cursor">_</span>
             </p>
+          </div>
+
+          <div class="hero-brief">
+            <div class="brief-card">
+              <div class="brief-label">기본 선거</div>
+              <div class="brief-value">서울시장 선거 또는 후보 미정 단계 모델링</div>
+            </div>
+            <div class="brief-card">
+              <div class="brief-label">핵심 분석축</div>
+              <div class="brief-value">구 단위 스윙 유권자 블록</div>
+            </div>
+            <div class="brief-card">
+              <div class="brief-label">출력 지표</div>
+              <div class="brief-value">지지율, 호감도, 투표의향</div>
+            </div>
           </div>
            
           <div class="decoration-square"></div>
         </div>
         
         <div class="hero-right">
-          <!-- Logo 区域 -->
-          <div class="logo-container">
-            <img src="../assets/logo/MiroFish_logo_left.jpeg" alt="MiroFish Logo" class="hero-logo" />
+          <div class="hero-visual">
+            <div class="visual-header">
+              <span class="visual-kicker">서울 민심 보드</span>
+              <span class="visual-badge">방향성 추정</span>
+            </div>
+
+            <div class="visual-grid">
+              <div class="visual-panel scoreboard">
+                <div class="panel-topline">정책 시그널</div>
+                <div class="score-title">주거 + 교통 공약 발표 시나리오</div>
+                <div class="signal-list">
+                  <div class="signal-item">
+                    <span>지지율</span>
+                    <strong>+2 상승 압력</strong>
+                  </div>
+                  <div class="signal-item">
+                    <span>핵심 스윙 구</span>
+                    <strong>마포 / 관악</strong>
+                  </div>
+                  <div class="signal-item negative">
+                    <span>리스크</span>
+                    <strong>강남 형평성 역풍</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div class="visual-panel map-card">
+                <div class="panel-topline">구별 흐름</div>
+                <div class="district-stack">
+                  <div class="district-pill gain">
+                    <span>관악</span>
+                    <strong>+3</strong>
+                  </div>
+                  <div class="district-pill soft-gain">
+                    <span>마포</span>
+                    <strong>+2</strong>
+                  </div>
+                  <div class="district-pill flat">
+                    <span>강남</span>
+                    <strong>0 / 혼합</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div class="visual-panel narrative-card">
+                <div class="panel-topline">서사 확산</div>
+                <div class="narrative-flow">
+                  <span class="flow-node">캠프</span>
+                  <span class="flow-arrow">→</span>
+                  <span class="flow-node">방송</span>
+                  <span class="flow-arrow">→</span>
+                  <span class="flow-node">지역 대화</span>
+                </div>
+                <div class="narrative-note">
+                  공약이 언론, 유권자 블록, 지역 이슈 네트워크를 거치며 어떻게 재해석되는지 추적합니다.
+                </div>
+              </div>
+            </div>
+
+            <div class="visual-overlay visual-overlay-one"></div>
+            <div class="visual-overlay visual-overlay-two"></div>
           </div>
           
           <button class="scroll-down-btn" @click="scrollToBottom">
@@ -48,84 +116,84 @@
         </div>
       </section>
 
-      <!-- 下半部分：双栏布局 -->
+      <!-- Bottom half: two-column layout -->
       <section class="dashboard-section">
-        <!-- 左栏：状态与步骤 -->
+        <!-- Left column: status and steps -->
         <div class="left-panel">
           <div class="panel-header">
-            <span class="status-dot">■</span> 系统状态
+            <span class="status-dot">■</span> 시스템 상태
           </div>
           
-          <h2 class="section-title">准备就绪</h2>
+          <h2 class="section-title">준비 완료</h2>
           <p class="section-desc">
-            预测引擎待命中，可上传多份非结构化数据以初始化模拟序列
+            서울 정치 반응 엔진이 준비되어 있습니다. 정책 문서, 공약문, 구별 현안 브리프, 정치 해설을 올리면 서울 중심 시나리오를 바로 시작할 수 있습니다.
           </p>
           
-          <!-- 数据指标卡片 -->
+          <!-- Metric cards -->
           <div class="metrics-row">
             <div class="metric-card">
-              <div class="metric-value">低成本</div>
-              <div class="metric-label">常规模拟平均5$/次</div>
+              <div class="metric-value">구 단위 분석</div>
+              <div class="metric-label">서울 각 구의 유권자 블록과 지역 현안을 함께 모델링</div>
             </div>
             <div class="metric-card">
-              <div class="metric-value">高可用</div>
-              <div class="metric-label">最多百万级Agent模拟</div>
+              <div class="metric-value">방향성 중심</div>
+              <div class="metric-label">지지율, 호감도, 투표의향, 스윙 변화를 함께 추적</div>
             </div>
           </div>
 
-          <!-- 项目模拟步骤介绍 (新增区域) -->
+          <!-- Workflow steps -->
           <div class="steps-container">
             <div class="steps-header">
-               <span class="diamond-icon">◇</span> 工作流序列
+               <span class="diamond-icon">◇</span> 워크플로
             </div>
             <div class="workflow-list">
               <div class="workflow-item">
                 <span class="step-num">01</span>
                 <div class="step-info">
-                  <div class="step-title">图谱构建</div>
-                  <div class="step-desc">现实种子提取 & 个体与群体记忆注入 & GraphRAG构建</div>
+                  <div class="step-title">그래프 구축</div>
+                  <div class="step-desc">후보, 정당, 지역, 현안, 캠페인 관계를 정치 메모리 그래프로 정리합니다</div>
                 </div>
               </div>
               <div class="workflow-item">
                 <span class="step-num">02</span>
                 <div class="step-info">
-                  <div class="step-title">环境搭建</div>
-                  <div class="step-desc">实体关系抽取 & 人设生成 & 环境配置Agent注入仿真参数</div>
+                  <div class="step-title">유권자 모델링</div>
+                  <div class="step-desc">서울 유권자 블록, 이슈 민감도, 투표 성향, 구별 정치 감도를 생성합니다</div>
                 </div>
               </div>
               <div class="workflow-item">
                 <span class="step-num">03</span>
                 <div class="step-info">
-                  <div class="step-title">开始模拟</div>
-                  <div class="step-desc">双平台并行模拟 & 自动解析预测需求 & 动态更新时序记忆</div>
+                  <div class="step-title">캠페인 실행</div>
+                  <div class="step-desc">정책과 메시지가 유권자, 언론, 지역 서사를 따라 어떻게 퍼지는지 시뮬레이션합니다</div>
                 </div>
               </div>
               <div class="workflow-item">
                 <span class="step-num">04</span>
                 <div class="step-info">
-                  <div class="step-title">报告生成</div>
-                  <div class="step-desc">ReportAgent拥有丰富的工具集与模拟后环境进行深度交互</div>
+                  <div class="step-title">전략 보고서</div>
+                  <div class="step-desc">구별 변화, 리스크, 지지 신호를 전략 메모 형태로 정리합니다</div>
                 </div>
               </div>
               <div class="workflow-item">
                 <span class="step-num">05</span>
                 <div class="step-info">
-                  <div class="step-title">深度互动</div>
-                  <div class="step-desc">与模拟世界中的任意一位进行对话 & 与ReportAgent进行对话</div>
+                  <div class="step-title">워룸 Q&A</div>
+                  <div class="step-desc">보고서를 검증하고 가정을 흔들어보며, 시뮬레이션된 유권자 블록과 직접 대화합니다</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 右栏：交互控制台 -->
+        <!-- Right column: control console -->
         <div class="right-panel">
           <div class="console-box">
-            <!-- 上传区域 -->
+            <!-- Upload area -->
             <div class="console-section">
               <div class="console-header">
-                <span class="console-label">01 / 现实种子</span>
-                <span class="console-meta">支持格式: PDF, MD, TXT</span>
+                <span class="console-label">01 / Source Material</span>
+                <span class="console-meta">지원 형식: PDF, MD, TXT</span>
               </div>
               
               <div 
@@ -148,8 +216,8 @@
                 
                 <div v-if="files.length === 0" class="upload-placeholder">
                   <div class="upload-icon">↑</div>
-                  <div class="upload-title">拖拽文件上传</div>
-                  <div class="upload-hint">或点击浏览文件系统</div>
+                  <div class="upload-title">파일을 여기에 끌어오세요</div>
+                  <div class="upload-hint">또는 클릭해서 문서를 선택하세요</div>
                 </div>
                 
                 <div v-else class="file-list">
@@ -162,37 +230,79 @@
               </div>
             </div>
 
-            <!-- 分割线 -->
+            <!-- Divider -->
             <div class="console-divider">
-              <span>输入参数</span>
+              <span>Input Parameters</span>
             </div>
 
-            <!-- 输入区域 -->
+            <!-- Prompt area -->
             <div class="console-section">
               <div class="console-header">
-                <span class="console-label">>_ 02 / 模拟提示词</span>
+                <span class="console-label">>_ 02 / 시뮬레이션 설명</span>
               </div>
               <div class="input-wrapper">
                 <textarea
                   v-model="formData.simulationRequirement"
                   class="code-input"
-                  placeholder="// 用自然语言输入模拟或预测需求（例.武大若发布撤销肖某处分的公告，会引发什么舆情走向）"
+                  placeholder="// 어떤 서울 정치 시나리오를 시험할지 적어주세요. 예: 주거비 부담이 서울 핵심 이슈가 될 때, 구별 지지율·투표의향·스윙 블록은 어떻게 움직이는가?"
                   rows="6"
                   :disabled="loading"
                 ></textarea>
-                <div class="model-badge">引擎: MiroFish-V1.0</div>
+                <div class="model-note">현재 프리셋: 서울시장 선거 및 정책 반응 시뮬레이터</div>
+                <div class="model-badge">Engine: KoreaPolicySim-V1.0</div>
               </div>
             </div>
 
-            <!-- 启动按钮 -->
+            <div class="console-section">
+              <div class="console-header">
+                <span class="console-label">>_ 03 / 시나리오 조건</span>
+              </div>
+              <div class="input-wrapper">
+                <div class="scenario-grid">
+                  <input
+                    v-model="formData.candidateName"
+                    class="scenario-input"
+                    placeholder="후보 이름 (선택)"
+                    :disabled="loading"
+                  />
+                  <input
+                    v-model="formData.candidateParty"
+                    class="scenario-input"
+                    placeholder="정당 또는 연합 (선택)"
+                    :disabled="loading"
+                  />
+                  <input
+                    v-model="formData.candidateSlogan"
+                    class="scenario-input"
+                    placeholder="캠페인 메시지 또는 슬로건 (선택)"
+                    :disabled="loading"
+                  />
+                  <input
+                    v-model="formData.targetDistrictsText"
+                    class="scenario-input"
+                    placeholder="대상 구, 쉼표로 구분 (비우면 서울 전체)"
+                    :disabled="loading"
+                  />
+                </div>
+                <textarea
+                  v-model="formData.campaignActionBrief"
+                  class="code-input compact"
+                  placeholder="// 정책 변화나 캠페인 신호를 적어주세요. 예: 주거비 문제가 서울 핵심 의제가 되고, 구별 언론 프레이밍이 갈리며, 임차인들이 형평성과 실현 가능성을 두고 논쟁한다."
+                  rows="4"
+                  :disabled="loading"
+                ></textarea>
+              </div>
+            </div>
+
+            <!-- Start button -->
             <div class="console-section btn-section">
               <button 
                 class="start-engine-btn"
                 @click="startSimulation"
                 :disabled="!canSubmit || loading"
               >
-                <span v-if="!loading">启动引擎</span>
-                <span v-else>初始化中...</span>
+                <span v-if="!loading">서울 유권자 모델 만들기</span>
+                <span v-else>초기화 중...</span>
                 <span class="btn-arrow">→</span>
               </button>
             </div>
@@ -200,7 +310,7 @@
         </div>
       </section>
 
-      <!-- 历史项目数据库 -->
+      <!-- Historical projects -->
       <HistoryDatabase />
     </div>
   </div>
@@ -215,7 +325,13 @@ const router = useRouter()
 
 // 表单数据
 const formData = ref({
-  simulationRequirement: ''
+  simulationRequirement: '',
+  simulationPreset: 'korea_society_policy',
+  candidateName: '',
+  candidateParty: '',
+  candidateSlogan: '',
+  targetDistrictsText: 'Gangnam, Mapo, Gwanak',
+  campaignActionBrief: ''
 })
 
 // 文件列表
@@ -231,7 +347,11 @@ const fileInput = ref(null)
 
 // 计算属性:是否可以提交
 const canSubmit = computed(() => {
-  return formData.value.simulationRequirement.trim() !== '' && files.value.length > 0
+  return (
+    formData.value.simulationRequirement.trim() !== '' &&
+    formData.value.campaignActionBrief.trim() !== '' &&
+    files.value.length > 0
+  )
 })
 
 // 触发文件选择
@@ -294,7 +414,27 @@ const startSimulation = () => {
   
   // 存储待上传的数据
   import('../store/pendingUpload.js').then(({ setPendingUpload }) => {
-    setPendingUpload(files.value, formData.value.simulationRequirement)
+    setPendingUpload(
+      files.value,
+      formData.value.simulationRequirement,
+      formData.value.simulationPreset,
+      {
+        raceType: 'seoul_mayor',
+        targetCity: 'Seoul',
+        targetDistricts: formData.value.targetDistrictsText
+          .split(',')
+          .map(item => item.trim())
+          .filter(Boolean),
+        candidateProfiles: formData.value.candidateName.trim()
+          ? [{
+              name: formData.value.candidateName.trim(),
+              party: formData.value.candidateParty.trim(),
+              slogan: formData.value.candidateSlogan.trim()
+            }]
+          : [],
+        campaignActionBrief: formData.value.campaignActionBrief.trim()
+      }
+    )
     
     // 立即跳转到Process页面（使用特殊标识表示新建项目）
     router.push({
@@ -325,7 +465,9 @@ const startSimulation = () => {
 
 .home-container {
   min-height: 100vh;
-  background: var(--white);
+  background:
+    radial-gradient(circle at top right, rgba(255, 69, 0, 0.1), transparent 28%),
+    linear-gradient(180deg, #fffdf9 0%, #ffffff 32%, #faf7f2 100%);
   font-family: var(--font-sans);
   color: var(--black);
 }
@@ -386,6 +528,8 @@ const startSimulation = () => {
   justify-content: space-between;
   margin-bottom: 80px;
   position: relative;
+  align-items: stretch;
+  gap: 48px;
 }
 
 .hero-left {
@@ -420,14 +564,15 @@ const startSimulation = () => {
 .main-title {
   font-size: 4.5rem;
   line-height: 1.2;
-  font-weight: 500;
-  margin: 0 0 40px 0;
+  font-weight: 600;
+  margin: 0 0 32px 0;
   letter-spacing: -2px;
   color: var(--black);
+  max-width: 780px;
 }
 
 .gradient-text {
-  background: linear-gradient(90deg, #000000 0%, #444444 100%);
+  background: linear-gradient(90deg, #111111 0%, #ff4500 80%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   display: inline-block;
@@ -478,6 +623,37 @@ const startSimulation = () => {
   margin-top: 20px;
 }
 
+.hero-brief {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  max-width: 760px;
+  margin-bottom: 32px;
+}
+
+.brief-card {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(8px);
+  padding: 16px 18px;
+}
+
+.brief-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: #777;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+
+.brief-value {
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: #111;
+  line-height: 1.4;
+}
+
 .blinking-cursor {
   color: var(--orange);
   animation: blink 1s step-end infinite;
@@ -503,16 +679,195 @@ const startSimulation = () => {
   align-items: flex-end;
 }
 
-.logo-container {
+.hero-visual {
   width: 100%;
+  min-height: 520px;
+  padding: 28px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(247, 241, 233, 0.96)),
+    linear-gradient(180deg, rgba(255, 69, 0, 0.08), transparent);
+  position: relative;
+  overflow: hidden;
   display: flex;
-  justify-content: flex-end;
-  padding-right: 40px;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
 }
 
-.hero-logo {
-  max-width: 500px; /* 调整logo大小 */
-  width: 100%;
+.visual-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.visual-kicker {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.visual-badge {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: #fff;
+  background: #111;
+  padding: 7px 10px;
+  letter-spacing: 0.06em;
+}
+
+.visual-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.9fr;
+  grid-template-rows: auto auto;
+  gap: 16px;
+  margin-top: 18px;
+  position: relative;
+  z-index: 1;
+}
+
+.visual-panel {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.82);
+  padding: 18px;
+  backdrop-filter: blur(6px);
+}
+
+.scoreboard {
+  grid-row: 1 / span 2;
+}
+
+.panel-topline {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: #777;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 14px;
+}
+
+.score-title {
+  font-size: 1.6rem;
+  line-height: 1.2;
+  font-weight: 700;
+  color: #111;
+  max-width: 280px;
+  margin-bottom: 22px;
+}
+
+.signal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.signal-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  font-size: 0.9rem;
+}
+
+.signal-item strong {
+  font-family: var(--font-mono);
+  font-size: 0.84rem;
+  color: #111;
+}
+
+.signal-item.negative strong {
+  color: #b63d00;
+}
+
+.district-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.district-pill {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.district-pill.gain {
+  background: linear-gradient(90deg, rgba(255, 112, 67, 0.2), rgba(255,255,255,0.9));
+}
+
+.district-pill.soft-gain {
+  background: linear-gradient(90deg, rgba(255, 184, 77, 0.18), rgba(255,255,255,0.9));
+}
+
+.district-pill.flat {
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.05), rgba(255,255,255,0.95));
+}
+
+.narrative-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.narrative-flow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.flow-node {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  padding: 8px 10px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.flow-arrow {
+  color: var(--orange);
+  font-weight: 700;
+}
+
+.narrative-note {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #555;
+}
+
+.visual-overlay {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(10px);
+  opacity: 0.7;
+}
+
+.visual-overlay-one {
+  width: 180px;
+  height: 180px;
+  background: rgba(255, 69, 0, 0.14);
+  top: -30px;
+  right: -20px;
+}
+
+.visual-overlay-two {
+  width: 120px;
+  height: 120px;
+  background: rgba(255, 193, 7, 0.12);
+  bottom: 20px;
+  right: 60px;
 }
 
 .scroll-down-btn {
@@ -587,7 +942,8 @@ const startSimulation = () => {
 }
 
 .metric-card {
-  border: 1px solid var(--border);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.8);
   padding: 20px 30px;
   min-width: 150px;
 }
@@ -606,7 +962,8 @@ const startSimulation = () => {
 
 /* 项目模拟步骤介绍 */
 .steps-container {
-  border: 1px solid var(--border);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.75);
   padding: 30px;
   position: relative;
 }
@@ -666,8 +1023,10 @@ const startSimulation = () => {
 }
 
 .console-box {
-  border: 1px solid #CCC; /* 外部实线 */
-  padding: 8px; /* 内边距形成双重边框感 */
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.07);
+  padding: 8px;
 }
 
 .console-section {
@@ -794,6 +1153,27 @@ const startSimulation = () => {
   background: #FAFAFA;
 }
 
+.scenario-grid {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.scenario-input {
+  width: 100%;
+  border: 1px solid #DDD;
+  background: #FFF;
+  padding: 12px 14px;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  outline: none;
+}
+
+.scenario-input:focus {
+  border-color: var(--orange);
+}
+
 .code-input {
   width: 100%;
   border: none;
@@ -807,6 +1187,10 @@ const startSimulation = () => {
   min-height: 150px;
 }
 
+.code-input.compact {
+  min-height: 110px;
+}
+
 .model-badge {
   position: absolute;
   bottom: 10px;
@@ -814,6 +1198,15 @@ const startSimulation = () => {
   font-family: var(--font-mono);
   font-size: 0.7rem;
   color: #AAA;
+}
+
+.model-note {
+  position: absolute;
+  bottom: 10px;
+  left: 15px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: #777;
 }
 
 .start-engine-btn {
@@ -881,10 +1274,21 @@ const startSimulation = () => {
     padding-right: 0;
     margin-bottom: 40px;
   }
-  
-  .hero-logo {
-    max-width: 200px;
-    margin-bottom: 20px;
+
+  .hero-brief {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-visual {
+    min-height: auto;
+  }
+
+  .visual-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .scoreboard {
+    grid-row: auto;
   }
 }
 </style>

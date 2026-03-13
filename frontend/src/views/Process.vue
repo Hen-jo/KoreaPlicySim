@@ -2,12 +2,12 @@
   <div class="process-page">
     <!-- 顶部导航栏 -->
     <nav class="navbar">
-      <div class="nav-brand" @click="goHome">MIROFISH</div>
+      <div class="nav-brand" @click="goHome">KoreaPolicySim</div>
       
       <!-- 中间步骤指示器 -->
       <div class="nav-center">
         <div class="step-badge">STEP 01</div>
-        <div class="step-name">图谱构建</div>
+        <div class="step-name">Campaign Graph Build</div>
       </div>
 
       <div class="nav-status">
@@ -585,6 +585,12 @@ const handleNewProject = async () => {
       formDataObj.append('files', file)
     })
     formDataObj.append('simulation_requirement', pending.simulationRequirement)
+    formDataObj.append('simulation_preset', pending.simulationPreset || 'korea_society_policy')
+    formDataObj.append('race_type', pending.raceType || 'seoul_mayor')
+    formDataObj.append('target_city', pending.targetCity || 'Seoul')
+    formDataObj.append('target_districts', JSON.stringify(pending.targetDistricts || []))
+    formDataObj.append('candidate_profiles', JSON.stringify(pending.candidateProfiles || []))
+    formDataObj.append('campaign_action_brief', pending.campaignActionBrief || '')
     
     // 调用本体生成 API
     const response = await generateOntology(formDataObj)

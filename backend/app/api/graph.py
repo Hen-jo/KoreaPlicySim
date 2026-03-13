@@ -1,9 +1,10 @@
 """
-图谱相关API路由
-采用项目上下文机制，服务端持久化状态
+Graph-related API routes.
+Uses project context and server-side persisted state.
 """
 
 import os
+import json
 import traceback
 import threading
 from flask import request, jsonify
@@ -12,37 +13,38 @@ from . import graph_bp
 from ..config import Config
 from ..services.ontology_generator import OntologyGenerator
 from ..services.graph_builder import GraphBuilderService
+from ..services.simulation_presets import KOREA_PRESET, normalize_preset
 from ..services.text_processor import TextProcessor
 from ..utils.file_parser import FileParser
 from ..utils.logger import get_logger
 from ..models.task import TaskManager, TaskStatus
 from ..models.project import ProjectManager, ProjectStatus
 
-# 获取日志器
-logger = get_logger('mirofish.api')
+# Logger
+logger = get_logger('koreapolicysim.api')
 
 
 def allowed_file(filename: str) -> bool:
-    """检查文件扩展名是否允许"""
+    """Check whether the file extension is allowed."""
     if not filename or '.' not in filename:
         return False
     ext = os.path.splitext(filename)[1].lower().lstrip('.')
     return ext in Config.ALLOWED_EXTENSIONS
 
 
-# ============== 项目管理接口 ==============
+# ============== Project management APIs ==============
 
 @graph_bp.route('/project/<project_id>', methods=['GET'])
 def get_project(project_id: str):
     """
-    获取项目详情
+    Get project details.
     """
     project = ProjectManager.get_project(project_id)
     
     if not project:
         return jsonify({
             "success": False,
-            "error": f"项目不存在: {project_id}"
+            "error": f"Project not found: {project_id}"
         }), 404
     
     return jsonify({
@@ -54,7 +56,7 @@ def get_project(project_id: str):
 @graph_bp.route('/project/list', methods=['GET'])
 def list_projects():
     """
-    列出所有项目
+    List all projects.
     """
     limit = request.args.get('limit', 50, type=int)
     projects = ProjectManager.list_projects(limit=limit)
@@ -69,36 +71,36 @@ def list_projects():
 @graph_bp.route('/project/<project_id>', methods=['DELETE'])
 def delete_project(project_id: str):
     """
-    删除项目
+    Delete a project.
     """
     success = ProjectManager.delete_project(project_id)
     
     if not success:
         return jsonify({
             "success": False,
-            "error": f"项目不存在或删除失败: {project_id}"
+            "error": f"Project does not exist or could not be deleted: {project_id}"
         }), 404
     
     return jsonify({
         "success": True,
-        "message": f"项目已删除: {project_id}"
+            "message": f"Project deleted: {project_id}"
     })
 
 
 @graph_bp.route('/project/<project_id>/reset', methods=['POST'])
 def reset_project(project_id: str):
     """
-    重置项目状态（用于重新构建图谱）
+    Reset the project state for graph rebuilding.
     """
     project = ProjectManager.get_project(project_id)
     
     if not project:
         return jsonify({
             "success": False,
-            "error": f"项目不存在: {project_id}"
+            "error": f"Project not found: {project_id}"
         }), 404
     
-    # 重置到本体已生成状态
+    # Reset to the ontology-generated state.
     if project.ontology:
         project.status = ProjectStatus.ONTOLOGY_GENERATED
     else:
@@ -111,27 +113,27 @@ def reset_project(project_id: str):
     
     return jsonify({
         "success": True,
-        "message": f"项目已重置: {project_id}",
+        "message": f"Project reset: {project_id}",
         "data": project.to_dict()
     })
 
 
-# ============== 接口1：上传文件并生成本体 ==============
+# ============== Endpoint 1: upload files and generate ontology ==============
 
 @graph_bp.route('/ontology/generate', methods=['POST'])
 def generate_ontology():
     """
-    接口1：上传文件，分析生成本体定义
+    Upload files and generate ontology definitions.
     
-    请求方式：multipart/form-data
+    Request type: multipart/form-data
     
-    参数：
-        files: 上传的文件（PDF/MD/TXT），可多个
-        simulation_requirement: 模拟需求描述（必填）
-        project_name: 项目名称（可选）
-        additional_context: 额外说明（可选）
+    Parameters:
+        files: uploaded files (PDF/MD/TXT), multiple allowed
+        simulation_requirement: simulation requirement description (required)
+        project_name: project name (optional)
+        additional_context: extra context (optional)
         
-    返回：
+    Returns:
         {
             "success": true,
             "data": {
@@ -147,42 +149,70 @@ def generate_ontology():
         }
     """
     try:
-        logger.info("=== 开始生成本体定义 ===")
+        logger.info("=== Starting ontology generation ===")
         
-        # 获取参数
+        # Read form values.
         simulation_requirement = request.form.get('simulation_requirement', '')
         project_name = request.form.get('project_name', 'Unnamed Project')
         additional_context = request.form.get('additional_context', '')
+        race_type = request.form.get('race_type', 'seoul_mayor') or 'seoul_mayor'
+        target_city = request.form.get('target_city', 'Seoul') or 'Seoul'
+        target_districts_raw = request.form.get('target_districts', '[]')
+        candidate_profiles_raw = request.form.get('candidate_profiles', '[]')
+        campaign_action_brief = request.form.get('campaign_action_brief', '')
+        simulation_preset = normalize_preset(
+            request.form.get('simulation_preset', KOREA_PRESET)
+        )
+
+        try:
+            target_districts = json.loads(target_districts_raw) if target_districts_raw else []
+            if not isinstance(target_districts, list):
+                target_districts = []
+        except json.JSONDecodeError:
+            target_districts = [item.strip() for item in target_districts_raw.split(',') if item.strip()]
+
+        try:
+            candidate_profiles = json.loads(candidate_profiles_raw) if candidate_profiles_raw else []
+            if not isinstance(candidate_profiles, list):
+                candidate_profiles = []
+        except json.JSONDecodeError:
+            candidate_profiles = []
         
-        logger.debug(f"项目名称: {project_name}")
-        logger.debug(f"模拟需求: {simulation_requirement[:100]}...")
+        logger.debug(f"Project name: {project_name}")
+        logger.debug(f"Simulation requirement: {simulation_requirement[:100]}...")
         
         if not simulation_requirement:
             return jsonify({
                 "success": False,
-                "error": "请提供模拟需求描述 (simulation_requirement)"
+                "error": "Provide simulation_requirement"
             }), 400
         
-        # 获取上传的文件
+        # Read uploaded files.
         uploaded_files = request.files.getlist('files')
         if not uploaded_files or all(not f.filename for f in uploaded_files):
             return jsonify({
                 "success": False,
-                "error": "请至少上传一个文档文件"
+                "error": "Upload at least one document"
             }), 400
         
-        # 创建项目
+        # Create the project.
         project = ProjectManager.create_project(name=project_name)
         project.simulation_requirement = simulation_requirement
-        logger.info(f"创建项目: {project.project_id}")
+        project.simulation_preset = simulation_preset
+        project.race_type = race_type
+        project.target_city = target_city
+        project.target_districts = target_districts
+        project.candidate_profiles = candidate_profiles
+        project.campaign_action_brief = campaign_action_brief
+        logger.info(f"Created project: {project.project_id}")
         
-        # 保存文件并提取文本
+        # Save files and extract text.
         document_texts = []
         all_text = ""
         
         for file in uploaded_files:
             if file and file.filename and allowed_file(file.filename):
-                # 保存文件到项目目录
+                # Save the file to the project directory.
                 file_info = ProjectManager.save_file_to_project(
                     project.project_id, 
                     file, 
@@ -193,7 +223,7 @@ def generate_ontology():
                     "size": file_info["size"]
                 })
                 
-                # 提取文本
+                # Extract text.
                 text = FileParser.extract_text(file_info["path"])
                 text = TextProcessor.preprocess_text(text)
                 document_texts.append(text)
@@ -203,27 +233,28 @@ def generate_ontology():
             ProjectManager.delete_project(project.project_id)
             return jsonify({
                 "success": False,
-                "error": "没有成功处理任何文档，请检查文件格式"
+                "error": "No document could be processed successfully; check the file format"
             }), 400
         
-        # 保存提取的文本
+        # Save the extracted text.
         project.total_text_length = len(all_text)
         ProjectManager.save_extracted_text(project.project_id, all_text)
-        logger.info(f"文本提取完成，共 {len(all_text)} 字符")
+        logger.info(f"Text extraction complete: {len(all_text)} characters")
         
-        # 生成本体
-        logger.info("调用 LLM 生成本体定义...")
+        # Generate ontology.
+        logger.info("Calling the LLM to generate ontology...")
         generator = OntologyGenerator()
         ontology = generator.generate(
             document_texts=document_texts,
             simulation_requirement=simulation_requirement,
-            additional_context=additional_context if additional_context else None
+            additional_context=additional_context if additional_context else None,
+            simulation_preset=simulation_preset
         )
         
-        # 保存本体到项目
+        # Save ontology to the project.
         entity_count = len(ontology.get("entity_types", []))
         edge_count = len(ontology.get("edge_types", []))
-        logger.info(f"本体生成完成: {entity_count} 个实体类型, {edge_count} 个关系类型")
+        logger.info(f"Ontology generation complete: {entity_count} entity types, {edge_count} edge types")
         
         project.ontology = {
             "entity_types": ontology.get("entity_types", []),
@@ -232,13 +263,19 @@ def generate_ontology():
         project.analysis_summary = ontology.get("analysis_summary", "")
         project.status = ProjectStatus.ONTOLOGY_GENERATED
         ProjectManager.save_project(project)
-        logger.info(f"=== 本体生成完成 === 项目ID: {project.project_id}")
+        logger.info(f"=== Ontology generation complete === project_id={project.project_id}")
         
         return jsonify({
             "success": True,
             "data": {
                 "project_id": project.project_id,
                 "project_name": project.name,
+                "simulation_preset": project.simulation_preset,
+                "race_type": project.race_type,
+                "target_city": project.target_city,
+                "target_districts": project.target_districts,
+                "candidate_profiles": project.candidate_profiles,
+                "campaign_action_brief": project.campaign_action_brief,
                 "ontology": project.ontology,
                 "analysis_summary": project.analysis_summary,
                 "files": project.files,
@@ -336,7 +373,7 @@ def build_graph():
             project.error = None
         
         # 获取配置
-        graph_name = data.get('graph_name', project.name or 'MiroFish Graph')
+        graph_name = data.get('graph_name', project.name or 'KoreaPolicySim Graph')
         chunk_size = data.get('chunk_size', project.chunk_size or Config.DEFAULT_CHUNK_SIZE)
         chunk_overlap = data.get('chunk_overlap', project.chunk_overlap or Config.DEFAULT_CHUNK_OVERLAP)
         
@@ -372,7 +409,7 @@ def build_graph():
         
         # 启动后台任务
         def build_task():
-            build_logger = get_logger('mirofish.build')
+            build_logger = get_logger('koreapolicysim.build')
             try:
                 build_logger.info(f"[{task_id}] 开始构建图谱...")
                 task_manager.update_task(

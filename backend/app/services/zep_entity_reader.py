@@ -13,7 +13,7 @@ from ..config import Config
 from ..utils.logger import get_logger
 from ..utils.zep_paging import fetch_all_nodes, fetch_all_edges
 
-logger = get_logger('mirofish.zep_entity_reader')
+logger = get_logger('koreapolicysim.zep_entity_reader')
 
 # 用于泛型返回类型
 T = TypeVar('T')
@@ -433,5 +433,4 @@ class ZepEntityReader:
             enrich_with_edges=enrich_with_edges
         )
         return result.entities
-
 

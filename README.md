@@ -1,203 +1,172 @@
-<div align="center">
-
-<img src="./static/image/MiroFish_logo_compressed.jpeg" alt="MiroFish Logo" width="75%"/>
-
-<a href="https://trendshift.io/repositories/16144" target="_blank"><img src="https://trendshift.io/api/badge/repositories/16144" alt="666ghj%2FMiroFish | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-
-简洁通用的群体智能引擎，预测万物
-</br>
-<em>A Simple and Universal Swarm Intelligence Engine, Predicting Anything</em>
-
-<a href="https://www.shanda.com/" target="_blank"><img src="./static/image/shanda_logo.png" alt="666ghj%2MiroFish | Shanda" height="40"/></a>
-
-[![GitHub Stars](https://img.shields.io/github/stars/666ghj/MiroFish?style=flat-square&color=DAA520)](https://github.com/666ghj/MiroFish/stargazers)
-[![GitHub Watchers](https://img.shields.io/github/watchers/666ghj/MiroFish?style=flat-square)](https://github.com/666ghj/MiroFish/watchers)
-[![GitHub Forks](https://img.shields.io/github/forks/666ghj/MiroFish?style=flat-square)](https://github.com/666ghj/MiroFish/network)
-[![Docker](https://img.shields.io/badge/Docker-Build-2496ED?style=flat-square&logo=docker&logoColor=white)](https://hub.docker.com/)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/666ghj/MiroFish)
-
-[![Discord](https://img.shields.io/badge/Discord-Join-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.com/channels/1469200078932545606/1469201282077163739)
-[![X](https://img.shields.io/badge/X-Follow-000000?style=flat-square&logo=x&logoColor=white)](https://x.com/mirofish_ai)
-[![Instagram](https://img.shields.io/badge/Instagram-Follow-E4405F?style=flat-square&logo=instagram&logoColor=white)](https://www.instagram.com/mirofish_ai/)
-
-[English](./README-EN.md) | [中文文档](./README.md)
-
-</div>
-
-## ⚡ 项目概述
-
-**MiroFish** 是一款基于多智能体技术的新一代 AI 预测引擎。通过提取现实世界的种子信息（如突发新闻、政策草案、金融信号），自动构建出高保真的平行数字世界。在此空间内，成千上万个具备独立人格、长期记忆与行为逻辑的智能体进行自由交互与社会演化。你可透过「上帝视角」动态注入变量，精准推演未来走向——**让未来在数字沙盘中预演，助决策在百战模拟后胜出**。
-
-> 你只需：上传种子材料（数据分析报告或者有趣的小说故事），并用自然语言描述预测需求</br>
-> MiroFish 将返回：一份详尽的预测报告，以及一个可深度交互的高保真数字世界
-
-### 我们的愿景
-
-MiroFish 致力于打造映射现实的群体智能镜像，通过捕捉个体互动引发的群体涌现，突破传统预测的局限：
-
-- **于宏观**：我们是决策者的预演实验室，让政策与公关在零风险中试错
-- **于微观**：我们是个人用户的创意沙盘，无论是推演小说结局还是探索脑洞，皆可有趣、好玩、触手可及
-
-从严肃预测到趣味仿真，我们让每一个如果都能看见结果，让预测万物成为可能。
-
-## 🌐 在线体验
-
-欢迎访问在线 Demo 演示环境，体验我们为你准备的一次关于热点舆情事件的推演预测：[mirofish-live-demo](https://666ghj.github.io/mirofish-demo/)
-
-## 📸 系统截图
+# KoreaPolicySim
 
 <div align="center">
-<table>
-<tr>
-<td><img src="./static/image/Screenshot/运行截图1.png" alt="截图1" width="100%"/></td>
-<td><img src="./static/image/Screenshot/运行截图2.png" alt="截图2" width="100%"/></td>
-</tr>
-<tr>
-<td><img src="./static/image/Screenshot/运行截图3.png" alt="截图3" width="100%"/></td>
-<td><img src="./static/image/Screenshot/运行截图4.png" alt="截图4" width="100%"/></td>
-</tr>
-<tr>
-<td><img src="./static/image/Screenshot/运行截图5.png" alt="截图5" width="100%"/></td>
-<td><img src="./static/image/Screenshot/运行截图6.png" alt="截图6" width="100%"/></td>
-</tr>
-</table>
+  <img src="./static/image/MiroFish_logo_compressed.jpeg" alt="KoreaPolicySim Logo" width="75%"/>
+  <p>A Seoul-focused political and policy response simulation engine built on document-grounded graphs and multi-agent interaction.</p>
+  <p><a href="./README-EN.md">English</a></p>
 </div>
 
-## 🎬 演示视频
+## Overview
 
-### 1. 武汉大学舆情推演预测 + MiroFish项目讲解
+**KoreaPolicySim** turns policy documents, campaign pledges, political commentary, district issue briefs, polling summaries, and news bundles into a graph-backed simulation environment. It extracts entities and relationships from uploaded material, builds a Zep graph, generates agent personas, runs an OASIS-based social simulation, and produces reports plus interactive follow-up analysis.
 
-<div align="center">
-<a href="https://www.bilibili.com/video/BV1VYBsBHEMY/" target="_blank"><img src="./static/image/武大模拟演示封面.png" alt="MiroFish Demo Video" width="75%"/></a>
+This repo is now oriented toward **Korean political and policy-response scenarios**, with a default preset for Seoul-centered simulations such as mayoral races, district-level sentiment shifts, policy approval changes, campaign pledge reactions, and constituency-specific issue dynamics.
 
-点击图片查看使用微舆BettaFish生成的《武大舆情报告》进行预测的完整演示视频
-</div>
+In practical terms, this project is designed as a **Seoul election and policy response simulator**. You upload a policy brief, campaign pledge, issue memo, polling summary, or news bundle, and the system models how different Seoul voter blocs may react by district. The output is not a literal election prophecy. It is a scenario engine that helps you estimate:
 
-### 2. 《红楼梦》失传结局推演预测
+- which districts are likely to respond positively or negatively
+- which voter blocs are activated, persuaded, alienated, or unchanged
+- where favorability, approval pressure, and swing-voter movement may shift
+- what kinds of backlash or momentum narratives may emerge
 
-<div align="center">
-<a href="https://www.bilibili.com/video/BV1cPk3BBExq" target="_blank"><img src="./static/image/红楼梦模拟推演封面.jpg" alt="MiroFish Demo Video" width="75%"/></a>
+## What This Project Does
 
-点击图片查看基于《红楼梦》前80回数十万字，MiroFish深度预测失传结局
-</div>
+KoreaPolicySim is built for questions like these:
 
-> **金融方向推演预测**、**时政要闻推演预测**等示例陆续更新中...
+- If a Seoul mayoral candidate announces a youth rent support pledge, which districts react favorably and which ones push back?
+- If a redevelopment policy includes stronger tenant protections, does that improve support in renter-heavy districts while weakening support in homeowner-heavy districts?
+- If a campaign focuses on commuting costs, childcare, safety, or welfare, which Seoul voter groups become more persuadable?
+- If a controversy breaks out, where is the likely reputational damage concentrated and which blocs are resilient?
 
-## 🔄 工作流程
+The system combines:
 
-1. **图谱构建**：现实种子提取 & 个体与群体记忆注入 & GraphRAG构建
-2. **环境搭建**：实体关系抽取 & 人设生成 & 环境配置Agent注入仿真参数
-3. **开始模拟**：双平台并行模拟 & 自动解析预测需求 & 动态更新时序记忆
-4. **报告生成**：ReportAgent拥有丰富的工具集与模拟后环境进行深度交互
-5. **深度互动**：与模拟世界中的任意一位进行对话 & 与ReportAgent进行对话
+- uploaded source documents
+- district-based Seoul voter bloc models
+- official/public-news civic signals
+- previous election baseline tendencies
+- LLM-based multi-agent interaction
 
-## 🚀 快速开始
+to generate a structured simulation output for political strategy and policy testing.
 
-### 一、源码部署（推荐）
+## Project Lineage
 
-#### 前置要求
+**KoreaPolicySim** is an adapted and renamed continuation of the original **MiroFish** codebase. This repository started from the earlier `MiroFish` project structure and has been reworked toward a Seoul-focused political and election-response simulator.
 
-| 工具 | 版本要求 | 说明 | 安装检查 |
-|------|---------|------|---------|
-| **Node.js** | 18+ | 前端运行环境，包含 npm | `node -v` |
-| **Python** | ≥3.11, ≤3.12 | 后端运行环境 | `python --version` |
-| **uv** | 最新版 | Python 包管理器 | `uv --version` |
+The current project keeps the core document-to-graph, agent generation, simulation, and reporting pipeline from that earlier base while changing:
 
-#### 1. 配置环境变量
+- the product identity from `MiroFish` to `KoreaPolicySim`
+- the primary domain from general document/social simulation to Seoul political response and campaign simulation
+- the default presets, voter bloc modeling, district signals, and support dashboard outputs
+
+If you redistribute or modify this repository, you should preserve the upstream attribution context and comply with the license terms in this repository.
+
+## Workflow
+
+1. **Graph Build**: ingest documents, extract structure, and build GraphRAG memory
+2. **Environment Setup**: generate entities, personas, and scenario configuration
+3. **Simulation Run**: execute the agent simulation and accumulate timeline memory
+4. **Report Generation**: analyze the run with tool-assisted report agents
+5. **Deep Interaction**: ask questions against the simulation state and generated report
+
+## Seoul Politics Preset
+
+The default `korea_society_policy` preset now acts as a Seoul political response simulator. It is designed to model how policies, campaign pledges, controversies, or public statements shift support and approval across districts, constituencies, and voter groups. See [docs/korea-social-simulation.md](./docs/korea-social-simulation.md).
+
+Starter material:
+
+- [docs/seoul-politics-prompts.md](./docs/seoul-politics-prompts.md)
+- [docs/sample-seoul-politics-brief.md](./docs/sample-seoul-politics-brief.md)
+- [docs/sample-seoul-policy-brief-ko.md](./docs/sample-seoul-policy-brief-ko.md)
+- [docs/seoul-civic-signals.md](./docs/seoul-civic-signals.md)
+
+## Example Scenario
+
+Example input:
+
+- a policy brief announcing youth rent support, commuter transit subsidies, and tenant relocation protection
+- a campaign action memo explaining how the policy is framed in public
+- supporting articles or polling summaries about housing pressure, commuting burden, and redevelopment conflict
+
+Example question:
+
+> 서울시장이 청년 월세 지원, 출퇴근 교통비 완화, 신혼가구 보증 지원, 재개발 지역 임차인 보호를 묶은 생활안정 패키지를 발표했을 때, 서울 25개 구 시민 블록이 어떻게 반응하고 어느 지역에서 지지 압력과 반발이 커지는가?
+
+Example output:
+
+- 관악구, 마포구, 성동구 청년 임차층에서 긍정 반응 확대
+- 강남구, 서초구 자가 보유층에서 재정 부담과 시장 개입 우려 증가
+- 동작구, 광진구, 영등포구 경합 블록에서 메시지 프레이밍에 따라 결과가 크게 달라질 수 있다는 신호
+- 재개발 이슈가 큰 용산구, 동대문구, 성북구에서 임차인 보호 문구가 갈등 완화 또는 개발 반발을 동시에 유발할 수 있다는 리스크
+
+## Output Model
+
+The current output is a **directional campaign dashboard**, not an exact vote-count model.
+
+Typical results include:
+
+- district-by-district support pressure
+- bloc-level favorability and vote-intent movement
+- positive drivers and backlash drivers
+- swing-risk notes by district
+- uncertainty notes explaining what is grounded vs inferred
+
+This means the tool is best used for **strategy simulation**, **message testing**, and **policy stress testing**, rather than as a final election forecast engine.
+
+## Quick Start
+
+### Prerequisites
+
+| Tool | Version |
+|------|---------|
+| Node.js | 18+ |
+| Python | 3.11 - 3.12 |
+| uv | latest |
+
+### 1. Configure environment variables
 
 ```bash
-# 复制示例配置文件
 cp .env.example .env
-
-# 编辑 .env 文件，填入必要的 API 密钥
 ```
 
-**必需的环境变量：**
+Example:
 
 ```env
-# LLM API配置（支持 OpenAI SDK 格式的任意 LLM API）
-# 推荐使用阿里百炼平台qwen-plus模型：https://bailian.console.aliyun.com/
-# 注意消耗较大，可先进行小于40轮的模拟尝试
-LLM_API_KEY=your_api_key
-LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
-LLM_MODEL_NAME=qwen-plus
+LLM_API_KEY=your_openai_api_key_here
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_MODEL_NAME=gpt-5.2
 
-# Zep Cloud 配置
-# 每月免费额度即可支撑简单使用：https://app.getzep.com/
-ZEP_API_KEY=your_zep_api_key
+ZEP_API_KEY=your_zep_api_key_here
 ```
 
-#### 2. 安装依赖
+### 2. Install dependencies
 
 ```bash
-# 一键安装所有依赖（根目录 + 前端 + 后端）
 npm run setup:all
 ```
 
-或者分步安装：
+### 3. Start the app
 
 ```bash
-# 安装 Node 依赖（根目录 + 前端）
-npm run setup
-
-# 安装 Python 依赖（后端，自动创建虚拟环境）
-npm run setup:backend
-```
-
-#### 3. 启动服务
-
-```bash
-# 同时启动前后端（在项目根目录执行）
 npm run dev
 ```
 
-**服务地址：**
-- 前端：`http://localhost:3000`
-- 后端 API：`http://localhost:5001`
+Service URLs:
 
-**单独启动：**
+- Frontend: `http://localhost:3000`
+- Backend: `http://localhost:5001`
+- Health check: `http://localhost:5001/health`
 
-```bash
-npm run backend   # 仅启动后端
-npm run frontend  # 仅启动前端
-```
-
-### 二、Docker 部署
+### Docker
 
 ```bash
-# 1. 配置环境变量（同源码部署）
 cp .env.example .env
-
-# 2. 拉取镜像并启动
 docker compose up -d
 ```
 
-默认会读取根目录下的 `.env`，并映射端口 `3000（前端）/5001（后端）`
+## Planned Repo Rename
 
-> 在 `docker-compose.yml` 中已通过注释提供加速镜像地址，可按需替换
+The codebase identity has been renamed to `KoreaPolicySim`, but the local folder and GitHub repository may still use the original `MiroFish` slug until the repo move is completed. The planned operational rename steps are documented in [docs/repo-rename.md](./docs/repo-rename.md).
 
-## 📬 更多交流
+## License And Attribution
 
-<div align="center">
-<img src="./static/image/QQ群.png" alt="QQ交流群" width="60%"/>
-</div>
+This repository is distributed under **AGPL-3.0**. See [LICENSE](./LICENSE).
 
-&nbsp;
+Attribution notes:
 
-MiroFish团队长期招募全职/实习，如果你对多Agent应用感兴趣，欢迎投递简历至：**mirofish@shanda.com**
+- This project is based on the earlier `MiroFish` codebase and retains that lineage for copyright and license notice purposes.
+- The current repository name, UI, prompts, and simulation focus have been substantially modified into `KoreaPolicySim`.
+- Upstream components and external dependencies, including **OASIS** and **Zep Cloud**, remain subject to their own licenses and terms.
 
-## 📄 致谢
+## Acknowledgments
 
-**MiroFish 得到了盛大集团的战略支持和孵化！**
-
-MiroFish 的仿真引擎由 **[OASIS](https://github.com/camel-ai/oasis)** 驱动，我们衷心感谢 CAMEL-AI 团队的开源贡献！
-
-## 📈 项目统计
-
-<a href="https://www.star-history.com/#666ghj/MiroFish&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=666ghj/MiroFish&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=666ghj/MiroFish&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=666ghj/MiroFish&type=date&legend=top-left" />
- </picture>
-</a>
+The simulation runtime is powered by **[OASIS](https://github.com/camel-ai/oasis)** and the graph memory layer uses **Zep Cloud**.

@@ -21,8 +21,9 @@ from zep_cloud.client import Zep
 from ..config import Config
 from ..utils.logger import get_logger
 from .zep_entity_reader import EntityNode, ZepEntityReader
+from .simulation_presets import get_preset_context, normalize_preset
 
-logger = get_logger('mirofish.oasis_profile')
+logger = get_logger('koreapolicysim.oasis_profile')
 
 
 @dataclass
@@ -201,6 +202,7 @@ class OasisProfileGenerator:
         self.zep_api_key = zep_api_key or Config.ZEP_API_KEY
         self.zep_client = None
         self.graph_id = graph_id
+        self.simulation_preset = "generic_social"
         
         if self.zep_api_key:
             try:
@@ -670,7 +672,12 @@ class OasisProfileGenerator:
     
     def _get_system_prompt(self, is_individual: bool) -> str:
         """获取系统提示词"""
-        base_prompt = "你是社交媒体用户画像生成专家。生成详细、真实的人设用于舆论模拟,最大程度还原已有现实情况。必须返回有效的JSON格式，所有字符串值不能包含未转义的换行符。使用中文。"
+        preset = get_preset_context(self.simulation_preset)
+        base_prompt = (
+            "你是社交媒体用户画像生成专家。生成详细、真实的人设用于舆论模拟,"
+            "最大程度还原已有现实情况。必须返回有效的JSON格式，所有字符串值不能包含未转义的换行符。使用中文。"
+            f"当前预设是“{preset['label']}”，画像重点为：{preset['profile_focus']}"
+        )
         return base_prompt
     
     def _build_individual_persona_prompt(
@@ -685,13 +692,16 @@ class OasisProfileGenerator:
         
         attrs_str = json.dumps(entity_attributes, ensure_ascii=False) if entity_attributes else "无"
         context_str = context[:3000] if context else "无额外上下文"
-        
+        preset = get_preset_context(self.simulation_preset)
+
         return f"""为实体生成详细的社交媒体用户人设,最大程度还原已有现实情况。
 
 实体名称: {entity_name}
 实体类型: {entity_type}
 实体摘要: {entity_summary}
 实体属性: {attrs_str}
+模拟预设: {preset['label']}
+预设重点: {preset['profile_focus']}
 
 上下文信息:
 {context_str}
@@ -710,7 +720,7 @@ class OasisProfileGenerator:
 3. age: 年龄数字（必须是整数）
 4. gender: 性别，必须是英文: "male" 或 "female"
 5. mbti: MBTI类型（如INTJ、ENFP等）
-6. country: 国家（使用中文，如"中国"）
+6. country: 国家（使用中文，如"韩国"、"中国"）
 7. profession: 职业
 8. interested_topics: 感兴趣话题数组
 
@@ -720,6 +730,7 @@ class OasisProfileGenerator:
 - 使用中文（除了gender字段必须用英文male/female）
 - 内容要与实体信息保持一致
 - age必须是有效的整数，gender必须是"male"或"female"
+- 如果是韩国政治与政策反应模拟，优先补全首尔所属区、可能的选区、阶层/职业位置、媒体消费、政党倾向、候选人观感、政策得失感与投票动机
 """
 
     def _build_group_persona_prompt(
@@ -734,13 +745,16 @@ class OasisProfileGenerator:
         
         attrs_str = json.dumps(entity_attributes, ensure_ascii=False) if entity_attributes else "无"
         context_str = context[:3000] if context else "无额外上下文"
-        
+        preset = get_preset_context(self.simulation_preset)
+
         return f"""为机构/群体实体生成详细的社交媒体账号设定,最大程度还原已有现实情况。
 
 实体名称: {entity_name}
 实体类型: {entity_type}
 实体摘要: {entity_summary}
 实体属性: {attrs_str}
+模拟预设: {preset['label']}
+预设重点: {preset['profile_focus']}
 
 上下文信息:
 {context_str}
@@ -759,7 +773,7 @@ class OasisProfileGenerator:
 3. age: 固定填30（机构账号的虚拟年龄）
 4. gender: 固定填"other"（机构账号使用other表示非个人）
 5. mbti: MBTI类型，用于描述账号风格，如ISTJ代表严谨保守
-6. country: 国家（使用中文，如"中国"）
+6. country: 国家（使用中文，如"韩国"、"中国"）
 7. profession: 机构职能描述
 8. interested_topics: 关注领域数组
 
@@ -768,7 +782,8 @@ class OasisProfileGenerator:
 - persona必须是一段连贯的文字描述，不要使用换行符
 - 使用中文（除了gender字段必须用英文"other"）
 - age必须是整数30，gender必须是字符串"other"
-- 机构账号发言要符合其身份定位"""
+- 机构账号发言要符合其身份定位
+- 如果是韩国政治与政策反应模拟，机构设定应体现韩国行政、政党、民调、媒体、区级/市级政治或政策执行语境"""
     
     def _generate_profile_rule_based(
         self,
@@ -778,6 +793,9 @@ class OasisProfileGenerator:
         entity_attributes: Dict[str, Any]
     ) -> Dict[str, Any]:
         """使用规则生成基础人设"""
+        preset = normalize_preset(self.simulation_preset)
+        default_country = "韩国" if preset == "korea_society_policy" else "中国"
+        default_topics = ["首尔政治", "公共政策", "选区差异", "支持率变化"] if preset == "korea_society_policy" else ["General", "Social Issues"]
         
         # 根据实体类型生成不同的人设
         entity_type_lower = entity_type.lower()
@@ -789,9 +807,9 @@ class OasisProfileGenerator:
                 "age": random.randint(18, 30),
                 "gender": random.choice(["male", "female"]),
                 "mbti": random.choice(self.MBTI_TYPES),
-                "country": random.choice(self.COUNTRIES),
+                "country": default_country,
                 "profession": "Student",
-                "interested_topics": ["Education", "Social Issues", "Technology"],
+                "interested_topics": ["Seoul Politics", "Education", "Youth Policy", "Voting Issues"] if preset == "korea_society_policy" else ["Education", "Social Issues", "Technology"],
             }
         
         elif entity_type_lower in ["publicfigure", "expert", "faculty"]:
@@ -801,9 +819,9 @@ class OasisProfileGenerator:
                 "age": random.randint(35, 60),
                 "gender": random.choice(["male", "female"]),
                 "mbti": random.choice(["ENTJ", "INTJ", "ENTP", "INTP"]),
-                "country": random.choice(self.COUNTRIES),
+                "country": default_country,
                 "profession": entity_attributes.get("occupation", "Expert"),
-                "interested_topics": ["Politics", "Economics", "Culture & Society"],
+                "interested_topics": ["Politics", "Campaign Strategy", "Approval Ratings", "Policy Debate"] if preset == "korea_society_policy" else ["Politics", "Economics", "Culture & Society"],
             }
         
         elif entity_type_lower in ["mediaoutlet", "socialmediaplatform"]:
@@ -813,9 +831,9 @@ class OasisProfileGenerator:
                 "age": 30,  # 机构虚拟年龄
                 "gender": "other",  # 机构使用other
                 "mbti": "ISTJ",  # 机构风格：严谨保守
-                "country": "中国",
+                "country": default_country,
                 "profession": "Media",
-                "interested_topics": ["General News", "Current Events", "Public Affairs"],
+                "interested_topics": ["Public Policy", "Polling", "District Issues", "Breaking News"] if preset == "korea_society_policy" else ["General News", "Current Events", "Public Affairs"],
             }
         
         elif entity_type_lower in ["university", "governmentagency", "ngo", "organization"]:
@@ -825,7 +843,7 @@ class OasisProfileGenerator:
                 "age": 30,  # 机构虚拟年龄
                 "gender": "other",  # 机构使用other
                 "mbti": "ISTJ",  # 机构风格：严谨保守
-                "country": "中国",
+                "country": default_country,
                 "profession": entity_type,
                 "interested_topics": ["Public Policy", "Community", "Official Announcements"],
             }
@@ -838,14 +856,18 @@ class OasisProfileGenerator:
                 "age": random.randint(25, 50),
                 "gender": random.choice(["male", "female"]),
                 "mbti": random.choice(self.MBTI_TYPES),
-                "country": random.choice(self.COUNTRIES),
+                "country": default_country,
                 "profession": entity_type,
-                "interested_topics": ["General", "Social Issues"],
+                "interested_topics": default_topics,
             }
     
     def set_graph_id(self, graph_id: str):
         """设置图谱ID用于Zep检索"""
         self.graph_id = graph_id
+
+    def set_simulation_preset(self, simulation_preset: str):
+        """设置模拟预设"""
+        self.simulation_preset = normalize_preset(simulation_preset)
     
     def generate_profiles_from_entities(
         self,
@@ -1197,4 +1219,3 @@ class OasisProfileGenerator:
         """[已废弃] 请使用 save_profiles() 方法"""
         logger.warning("save_profiles_to_json已废弃，请使用save_profiles方法")
         self.save_profiles(profiles, file_path, platform)
-

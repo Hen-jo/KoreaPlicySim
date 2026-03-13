@@ -21,8 +21,9 @@ from openai import OpenAI
 from ..config import Config
 from ..utils.logger import get_logger
 from .zep_entity_reader import EntityNode, ZepEntityReader
+from .simulation_presets import get_preset_context, normalize_preset
 
-logger = get_logger('mirofish.simulation_config')
+logger = get_logger('koreapolicysim.simulation_config')
 
 # 中国作息时间配置（北京时间）
 CHINA_TIMEZONE_CONFIG = {
@@ -150,6 +151,7 @@ class SimulationParameters:
     project_id: str
     graph_id: str
     simulation_requirement: str
+    simulation_preset: str = "generic_social"
     
     # 时间配置
     time_config: TimeSimulationConfig = field(default_factory=TimeSimulationConfig)
@@ -180,6 +182,7 @@ class SimulationParameters:
             "project_id": self.project_id,
             "graph_id": self.graph_id,
             "simulation_requirement": self.simulation_requirement,
+            "simulation_preset": self.simulation_preset,
             "time_config": time_dict,
             "agent_configs": [asdict(a) for a in self.agent_configs],
             "event_config": asdict(self.event_config),
@@ -246,6 +249,7 @@ class SimulationConfigGenerator:
         graph_id: str,
         simulation_requirement: str,
         document_text: str,
+        simulation_preset: str,
         entities: List[EntityNode],
         enable_twitter: bool = True,
         enable_reddit: bool = True,
@@ -269,6 +273,7 @@ class SimulationConfigGenerator:
             SimulationParameters: 完整的模拟参数
         """
         logger.info(f"开始智能生成模拟配置: simulation_id={simulation_id}, 实体数={len(entities)}")
+        preset = get_preset_context(simulation_preset)
         
         # 计算总步骤数
         num_batches = math.ceil(len(entities) / self.AGENTS_PER_BATCH)
@@ -286,7 +291,8 @@ class SimulationConfigGenerator:
         context = self._build_context(
             simulation_requirement=simulation_requirement,
             document_text=document_text,
-            entities=entities
+            entities=entities,
+            simulation_preset=simulation_preset
         )
         
         reasoning_parts = []
@@ -294,13 +300,18 @@ class SimulationConfigGenerator:
         # ========== 步骤1: 生成时间配置 ==========
         report_progress(1, "生成时间配置...")
         num_entities = len(entities)
-        time_config_result = self._generate_time_config(context, num_entities)
+        time_config_result = self._generate_time_config(context, num_entities, simulation_preset)
         time_config = self._parse_time_config(time_config_result, num_entities)
         reasoning_parts.append(f"时间配置: {time_config_result.get('reasoning', '成功')}")
         
         # ========== 步骤2: 生成事件配置 ==========
         report_progress(2, "生成事件配置和热点话题...")
-        event_config_result = self._generate_event_config(context, simulation_requirement, entities)
+        event_config_result = self._generate_event_config(
+            context,
+            simulation_requirement,
+            entities,
+            simulation_preset
+        )
         event_config = self._parse_event_config(event_config_result)
         reasoning_parts.append(f"事件配置: {event_config_result.get('reasoning', '成功')}")
         
@@ -320,7 +331,8 @@ class SimulationConfigGenerator:
                 context=context,
                 entities=batch_entities,
                 start_idx=start_idx,
-                simulation_requirement=simulation_requirement
+                simulation_requirement=simulation_requirement,
+                simulation_preset=simulation_preset
             )
             all_agent_configs.extend(batch_configs)
         
@@ -363,6 +375,7 @@ class SimulationConfigGenerator:
             project_id=project_id,
             graph_id=graph_id,
             simulation_requirement=simulation_requirement,
+            simulation_preset=normalize_preset(simulation_preset),
             time_config=time_config,
             agent_configs=all_agent_configs,
             event_config=event_config,
@@ -370,7 +383,11 @@ class SimulationConfigGenerator:
             reddit_config=reddit_config,
             llm_model=self.model_name,
             llm_base_url=self.base_url,
-            generation_reasoning=" | ".join(reasoning_parts)
+            generation_reasoning=" | ".join([
+                f"模拟预设: {preset['label']}",
+                f"预设重点: {preset['config_focus']}",
+                *reasoning_parts
+            ])
         )
         
         logger.info(f"模拟配置生成完成: {len(params.agent_configs)} 个Agent配置")
@@ -381,9 +398,11 @@ class SimulationConfigGenerator:
         self,
         simulation_requirement: str,
         document_text: str,
-        entities: List[EntityNode]
+        entities: List[EntityNode],
+        simulation_preset: str
     ) -> str:
         """构建LLM上下文，截断到最大长度"""
+        preset = get_preset_context(simulation_preset)
         
         # 实体摘要
         entity_summary = self._summarize_entities(entities)
@@ -391,6 +410,7 @@ class SimulationConfigGenerator:
         # 构建上下文
         context_parts = [
             f"## 模拟需求\n{simulation_requirement}",
+            f"\n## 模拟预设\n{preset['label']}\n{preset['config_focus']}",
             f"\n## 实体信息 ({len(entities)}个)\n{entity_summary}",
         ]
         
@@ -531,8 +551,14 @@ class SimulationConfigGenerator:
         
         return None
     
-    def _generate_time_config(self, context: str, num_entities: int) -> Dict[str, Any]:
+    def _generate_time_config(
+        self,
+        context: str,
+        num_entities: int,
+        simulation_preset: str
+    ) -> Dict[str, Any]:
         """生成时间配置"""
+        preset = get_preset_context(simulation_preset)
         # 使用配置的上下文截断长度
         context_truncated = context[:self.TIME_CONFIG_CONTEXT_LENGTH]
         
@@ -546,8 +572,11 @@ class SimulationConfigGenerator:
 ## 任务
 请生成时间配置JSON。
 
+当前预设: {preset['label']}
+预设重点: {preset['config_focus']}
+
 ### 基本原则（仅供参考，需根据具体事件和参与群体灵活调整）：
-- 用户群体为中国人，需符合北京时间作息习惯
+- 用户群体默认为东亚社交节奏；若为韩国社会政策模拟，请优先符合韩国工作日/通勤/晚间讨论习惯
 - 凌晨0-5点几乎无人活动（活跃度系数0.05）
 - 早上6-8点逐渐活跃（活跃度系数0.4）
 - 工作时间9-18点中等活跃（活跃度系数0.7）
@@ -584,16 +613,21 @@ class SimulationConfigGenerator:
 - work_hours (int数组): 工作时段
 - reasoning (string): 简要说明为什么这样配置"""
 
-        system_prompt = "你是社交媒体模拟专家。返回纯JSON格式，时间配置需符合中国人作息习惯。"
+        system_prompt = (
+            "你是社交媒体模拟专家。返回纯JSON格式。"
+            f"当前预设为{preset['label']}，时间配置需服务于该预设。"
+        )
         
         try:
             return self._call_llm_with_retry(prompt, system_prompt)
         except Exception as e:
             logger.warning(f"时间配置LLM生成失败: {e}, 使用默认配置")
-            return self._get_default_time_config(num_entities)
-    
-    def _get_default_time_config(self, num_entities: int) -> Dict[str, Any]:
-        """获取默认时间配置（中国人作息）"""
+            return self._get_default_time_config(num_entities, simulation_preset)
+
+    def _get_default_time_config(self, num_entities: int, simulation_preset: str) -> Dict[str, Any]:
+        """获取默认时间配置"""
+        preset = normalize_preset(simulation_preset)
+        reasoning = "使用默认首尔政治讨论节奏配置（每轮1小时）" if preset == "korea_society_policy" else "使用默认通用社交讨论节奏配置（每轮1小时）"
         return {
             "total_simulation_hours": 72,
             "minutes_per_round": 60,  # 每轮1小时，加快时间流速
@@ -603,7 +637,7 @@ class SimulationConfigGenerator:
             "off_peak_hours": [0, 1, 2, 3, 4, 5],
             "morning_hours": [6, 7, 8],
             "work_hours": [9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
-            "reasoning": "使用默认中国人作息配置（每轮1小时）"
+            "reasoning": reasoning
         }
     
     def _parse_time_config(self, result: Dict[str, Any], num_entities: int) -> TimeSimulationConfig:
@@ -645,9 +679,11 @@ class SimulationConfigGenerator:
         self, 
         context: str, 
         simulation_requirement: str,
-        entities: List[EntityNode]
+        entities: List[EntityNode],
+        simulation_preset: str
     ) -> Dict[str, Any]:
         """生成事件配置"""
+        preset = get_preset_context(simulation_preset)
         
         # 获取可用的实体类型列表，供 LLM 参考
         entity_types_available = list(set(
@@ -686,8 +722,12 @@ class SimulationConfigGenerator:
 - 描述舆论发展方向
 - 设计初始帖子内容，**每个帖子必须指定 poster_type（发布者类型）**
 
+当前预设: {preset['label']}
+预设重点: {preset['config_focus']}
+
 **重要**: poster_type 必须从上面的"可用实体类型"中选择，这样初始帖子才能分配给合适的 Agent 发布。
 例如：官方声明应由 Official/University 类型发布，新闻由 MediaOutlet 发布，学生观点由 Student 发布。
+如果是韩国政治与政策反应模拟，优先让初始帖子体现政策 발표、公约 비교、候选人发言、民调变化、首尔内区级差异、选区敏感议题、媒体 framing 与支持率波动等线索。
 
 返回JSON格式（不要markdown）：
 {{
@@ -700,7 +740,10 @@ class SimulationConfigGenerator:
     "reasoning": "<简要说明>"
 }}"""
 
-        system_prompt = "你是舆论分析专家。返回纯JSON格式。注意 poster_type 必须精确匹配可用实体类型。"
+        system_prompt = (
+            "你是舆论分析专家。返回纯JSON格式。"
+            f"当前预设为{preset['label']}。注意 poster_type 必须精确匹配可用实体类型。"
+        )
         
         try:
             return self._call_llm_with_retry(prompt, system_prompt)
@@ -812,9 +855,11 @@ class SimulationConfigGenerator:
         context: str,
         entities: List[EntityNode],
         start_idx: int,
-        simulation_requirement: str
+        simulation_requirement: str,
+        simulation_preset: str
     ) -> List[AgentActivityConfig]:
         """分批生成Agent配置"""
+        preset = get_preset_context(simulation_preset)
         
         # 构建实体信息（使用配置的摘要长度）
         entity_list = []
@@ -844,6 +889,10 @@ class SimulationConfigGenerator:
 - **个人**（Student/Person/Alumni）：活跃度高(0.6-0.9)，主要晚间活动(18-23)，响应快(1-15分钟)，影响力低(0.8-1.2)
 - **公众人物/专家**：活跃度中(0.4-0.6)，影响力中高(1.5-2.0)
 
+当前预设: {preset['label']}
+预设重点: {preset['config_focus']}
+如果是韩国社会政策模拟，请优先体现世代差异、地区差异、政策受影响程度、就业/住居压力与媒体敏感度。
+
 返回JSON格式（不要markdown）：
 {{
     "agent_configs": [
@@ -863,7 +912,10 @@ class SimulationConfigGenerator:
     ]
 }}"""
 
-        system_prompt = "你是社交媒体行为分析专家。返回纯JSON，配置需符合中国人作息习惯。"
+        system_prompt = (
+            "你是社交媒体行为分析专家。返回纯JSON，配置需符合东亚用户作息。"
+            f"当前预设为{preset['label']}，配置需服务于该预设。"
+        )
         
         try:
             result = self._call_llm_with_retry(prompt, system_prompt)
@@ -880,7 +932,7 @@ class SimulationConfigGenerator:
             
             # 如果LLM没有生成，使用规则生成
             if not cfg:
-                cfg = self._generate_agent_config_by_rule(entity)
+                cfg = self._generate_agent_config_by_rule(entity, simulation_preset)
             
             config = AgentActivityConfig(
                 agent_id=agent_id,
@@ -901,9 +953,10 @@ class SimulationConfigGenerator:
         
         return configs
     
-    def _generate_agent_config_by_rule(self, entity: EntityNode) -> Dict[str, Any]:
-        """基于规则生成单个Agent配置（中国人作息）"""
+    def _generate_agent_config_by_rule(self, entity: EntityNode, simulation_preset: str) -> Dict[str, Any]:
+        """基于规则生成单个Agent配置"""
         entity_type = (entity.get_entity_type() or "Unknown").lower()
+        preset = normalize_preset(simulation_preset)
         
         if entity_type in ["university", "governmentagency", "ngo"]:
             # 官方机构：工作时间活动，低频率，高影响力
@@ -970,6 +1023,18 @@ class SimulationConfigGenerator:
                 "stance": "neutral",
                 "influence_weight": 1.0
             }
+        elif preset == "korea_society_policy" and entity_type in ["person", "resident", "worker", "parent", "districtvoter", "swingvoter", "officeworker"]:
+            return {
+                "activity_level": 0.75,
+                "posts_per_hour": 0.5,
+                "comments_per_hour": 1.3,
+                "active_hours": [7, 8, 12, 13, 19, 20, 21, 22, 23],
+                "response_delay_min": 2,
+                "response_delay_max": 20,
+                "sentiment_bias": 0.0,
+                "stance": "neutral",
+                "influence_weight": 1.1
+            }
         else:
             # 普通人：晚间高峰
             return {
@@ -984,4 +1049,3 @@ class SimulationConfigGenerator:
                 "influence_weight": 1.0
             }
     
-

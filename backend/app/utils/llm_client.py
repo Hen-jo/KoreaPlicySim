@@ -31,6 +31,11 @@ class LLMClient:
             api_key=self.api_key,
             base_url=self.base_url
         )
+
+    def _uses_completion_tokens(self) -> bool:
+        """Map token parameters for models that reject `max_tokens`."""
+        model_name = (self.model or "").lower()
+        return model_name.startswith("gpt-5")
     
     def chat(
         self,
@@ -55,8 +60,12 @@ class LLMClient:
             "model": self.model,
             "messages": messages,
             "temperature": temperature,
-            "max_tokens": max_tokens,
         }
+
+        if self._uses_completion_tokens():
+            kwargs["max_completion_tokens"] = max_tokens
+        else:
+            kwargs["max_tokens"] = max_tokens
         
         if response_format:
             kwargs["response_format"] = response_format
@@ -100,4 +109,3 @@ class LLMClient:
             return json.loads(cleaned_response)
         except json.JSONDecodeError:
             raise ValueError(f"LLM返回的JSON格式无效: {cleaned_response}")
-

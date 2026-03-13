@@ -16,7 +16,21 @@ from ..models.project import ProjectManager
 from ..models.task import TaskManager, TaskStatus
 from ..utils.logger import get_logger
 
-logger = get_logger('mirofish.api.report')
+logger = get_logger('koreapolicysim.api.report')
+
+
+def _serialize_report_with_dashboard(report):
+    data = report.to_dict()
+
+    if data.get("support_dashboard") or not data.get("simulation_id"):
+        return data
+
+    manager = SimulationManager()
+    state = manager.get_simulation(data["simulation_id"])
+    if state and state.support_dashboard:
+        data["support_dashboard"] = state.support_dashboard
+
+    return data
 
 
 # ============== 报告生成接口 ==============
@@ -150,6 +164,7 @@ def generate_report():
                     progress_callback=progress_callback,
                     report_id=report_id
                 )
+                report.support_dashboard = state.support_dashboard
                 
                 # 保存报告
                 ReportManager.save_report(report)
@@ -299,7 +314,7 @@ def get_report(report_id: str):
         
         return jsonify({
             "success": True,
-            "data": report.to_dict()
+            "data": _serialize_report_with_dashboard(report)
         })
         
     except Exception as e:
@@ -337,7 +352,7 @@ def get_report_by_simulation(simulation_id: str):
         
         return jsonify({
             "success": True,
-            "data": report.to_dict(),
+            "data": _serialize_report_with_dashboard(report),
             "has_report": True
         })
         
@@ -934,7 +949,7 @@ def search_graph_tool():
     
     请求（JSON）：
         {
-            "graph_id": "mirofish_xxxx",
+            "graph_id": "koreapolicysim_xxxx",
             "query": "搜索查询",
             "limit": 10
         }
@@ -982,7 +997,7 @@ def get_graph_statistics_tool():
     
     请求（JSON）：
         {
-            "graph_id": "mirofish_xxxx"
+            "graph_id": "koreapolicysim_xxxx"
         }
     """
     try:

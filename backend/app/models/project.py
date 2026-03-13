@@ -46,6 +46,13 @@ class Project:
     
     # 配置
     simulation_requirement: Optional[str] = None
+    simulation_preset: str = "generic_social"
+    race_type: str = "seoul_mayor"
+    target_city: str = "Seoul"
+    target_districts: List[str] = field(default_factory=list)
+    candidate_profiles: List[Dict[str, Any]] = field(default_factory=list)
+    campaign_action_brief: str = ""
+    support_dashboard: Optional[Dict[str, Any]] = None
     chunk_size: int = 500
     chunk_overlap: int = 50
     
@@ -67,6 +74,13 @@ class Project:
             "graph_id": self.graph_id,
             "graph_build_task_id": self.graph_build_task_id,
             "simulation_requirement": self.simulation_requirement,
+            "simulation_preset": self.simulation_preset,
+            "race_type": self.race_type,
+            "target_city": self.target_city,
+            "target_districts": self.target_districts,
+            "candidate_profiles": self.candidate_profiles,
+            "campaign_action_brief": self.campaign_action_brief,
+            "support_dashboard": self.support_dashboard,
             "chunk_size": self.chunk_size,
             "chunk_overlap": self.chunk_overlap,
             "error": self.error
@@ -92,6 +106,13 @@ class Project:
             graph_id=data.get('graph_id'),
             graph_build_task_id=data.get('graph_build_task_id'),
             simulation_requirement=data.get('simulation_requirement'),
+            simulation_preset=data.get('simulation_preset', 'generic_social'),
+            race_type=data.get('race_type', 'seoul_mayor'),
+            target_city=data.get('target_city', 'Seoul'),
+            target_districts=data.get('target_districts', []),
+            candidate_profiles=data.get('candidate_profiles', []),
+            campaign_action_brief=data.get('campaign_action_brief', ''),
+            support_dashboard=data.get('support_dashboard'),
             chunk_size=data.get('chunk_size', 500),
             chunk_overlap=data.get('chunk_overlap', 50),
             error=data.get('error')
@@ -302,4 +323,3 @@ class ProjectManager:
             for f in os.listdir(files_dir) 
             if os.path.isfile(os.path.join(files_dir, f))
         ]
-
