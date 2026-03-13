@@ -1,7 +1,6 @@
 # KoreaPolicySim
 
 <div align="center">
-  <img src="./static/image/MiroFish_logo_compressed.jpeg" alt="KoreaPolicySim Logo" width="75%"/>
   <p>A Seoul-focused political and policy response simulation engine built on document-grounded graphs and multi-agent interaction.</p>
   <p><a href="./README.md">Main README</a></p>
 </div>
