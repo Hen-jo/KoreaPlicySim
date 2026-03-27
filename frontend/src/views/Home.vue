@@ -1,1294 +1,1733 @@
 <template>
-  <div class="home-container">
-    <!-- Top navigation -->
-    <nav class="navbar">
-      <div class="nav-brand">KOREAPOLICYSIM</div>
-    </nav>
+  <section class="seoul-page">
+    <header class="hero">
+      <p class="hero-eyebrow">서울 지도 기반 정당 성향 지도</p>
+      <h1>구를 누르면, 그 동네의 성향이 펼쳐집니다.</h1>
+      <p class="hero-copy">
+        서울시 구경계를 실제 행정구역 GeoJSON으로 표시하고, 2024년 제21대 국회의원선거 구 단위 득표율(구성 정당 기준)로 색이 바뀝니다.
+        구를 클릭하면 선거 지지도와 동네 인구/성별/연령 지표를 함께 확인할 수 있습니다.
+      </p>
+    </header>
 
-    <div class="main-content">
-      <!-- Top half: Hero -->
-      <section class="hero-section">
-        <div class="hero-left">
-          <div class="tag-row">
-            <span class="orange-tag">서울 시장 선거운동 시뮬레이터</span>
-            <span class="version-text">/ v0.1 preview</span>
-          </div>
-          
-          <h1 class="main-title">
-            공약문, 현안 브리프, 여론 메모를 올리고<br>
-            <span class="gradient-text">서울 전역의 지지율 변화를 시뮬레이션하세요</span>
-          </h1>
-          
-          <div class="hero-desc">
-            <p>
-              <span class="highlight-bold">KoreaPolicySim</span>은 짧은 문단 하나만 있어도 한국 정치 문서, 정책 초안, 선거 공약, 지역 현안을 바탕으로 시민 반응 환경을 시뮬레이션합니다. 상단 전략 보드에서 <span class="highlight-orange">서울 전체, 특정 구, 주요 유권자 블록</span>별로 지지, 불신, 호감도가 어떻게 움직일지 관찰할 수 있습니다.
-            </p>
-            <p class="slogan-text">
-              도시가 반응하기 전에 선거 전략을 먼저 시험해보세요<span class="blinking-cursor">_</span>
-            </p>
-          </div>
-
-          <div class="hero-brief">
-            <div class="brief-card">
-              <div class="brief-label">기본 선거</div>
-              <div class="brief-value">서울시장 선거 또는 후보 미정 단계 모델링</div>
+    <section class="main-grid">
+      <div class="map-shell">
+        <div class="map-frame">
+          <div class="map-lights"></div>
+          <div class="map-shadow"></div>
+          <div class="map-wrap" ref="mapWrap">
+            <svg ref="mapSvg" class="seoul-map" viewBox="0 0 960 680" role="img" aria-label="서울시 구별 정당 성향 지도"></svg>
+            <div v-if="loading" class="map-mask">
+              <span>지도 로딩 중...</span>
             </div>
-            <div class="brief-card">
-              <div class="brief-label">핵심 분석축</div>
-              <div class="brief-value">구 단위 스윙 유권자 블록</div>
-            </div>
-            <div class="brief-card">
-              <div class="brief-label">출력 지표</div>
-              <div class="brief-value">지지율, 호감도, 투표의향</div>
+            <div v-if="error" class="map-mask map-mask--error">
+              <span>{{ error }}</span>
             </div>
           </div>
-           
-          <div class="decoration-square"></div>
         </div>
-        
-        <div class="hero-right">
-          <div class="hero-visual">
-            <div class="visual-header">
-              <span class="visual-kicker">서울 민심 보드</span>
-              <span class="visual-badge">방향성 추정</span>
-            </div>
 
-            <div class="visual-grid">
-              <div class="visual-panel scoreboard">
-                <div class="panel-topline">정책 시그널</div>
-                <div class="score-title">주거 + 교통 공약 발표 시나리오</div>
-                <div class="signal-list">
-                  <div class="signal-item">
-                    <span>지지율</span>
-                    <strong>+2 상승 압력</strong>
-                  </div>
-                  <div class="signal-item">
-                    <span>핵심 스윙 구</span>
-                    <strong>마포 / 관악</strong>
-                  </div>
-                  <div class="signal-item negative">
-                    <span>리스크</span>
-                    <strong>강남 형평성 역풍</strong>
-                  </div>
-                </div>
-              </div>
-
-              <div class="visual-panel map-card">
-                <div class="panel-topline">구별 흐름</div>
-                <div class="district-stack">
-                  <div class="district-pill gain">
-                    <span>관악</span>
-                    <strong>+3</strong>
-                  </div>
-                  <div class="district-pill soft-gain">
-                    <span>마포</span>
-                    <strong>+2</strong>
-                  </div>
-                  <div class="district-pill flat">
-                    <span>강남</span>
-                    <strong>0 / 혼합</strong>
-                  </div>
-                </div>
-              </div>
-
-              <div class="visual-panel narrative-card">
-                <div class="panel-topline">서사 확산</div>
-                <div class="narrative-flow">
-                  <span class="flow-node">캠프</span>
-                  <span class="flow-arrow">→</span>
-                  <span class="flow-node">방송</span>
-                  <span class="flow-arrow">→</span>
-                  <span class="flow-node">지역 대화</span>
-                </div>
-                <div class="narrative-note">
-                  공약이 언론, 유권자 블록, 지역 이슈 네트워크를 거치며 어떻게 재해석되는지 추적합니다.
-                </div>
-              </div>
-            </div>
-
-            <div class="visual-overlay visual-overlay-one"></div>
-            <div class="visual-overlay visual-overlay-two"></div>
-          </div>
-          
-          <button class="scroll-down-btn" @click="scrollToBottom">
-            ↓
+        <div class="legend-row" role="list">
+          <button
+            v-for="party in legendItems"
+            :key="party.id"
+            class="legend-pill"
+            :class="{ active: activeParty === party.id }"
+            @click="setPartyFilter(party.id)"
+            :style="{ '--party-color': party.color }"
+            role="button"
+            :aria-label="`${party.name}만 강조`">
+            <span>{{ party.name }}</span>
           </button>
         </div>
-      </section>
+      </div>
 
-      <!-- Bottom half: two-column layout -->
-      <section class="dashboard-section">
-        <!-- Left column: status and steps -->
-        <div class="left-panel">
-          <div class="panel-header">
-            <span class="status-dot">■</span> 시스템 상태
+      <aside class="detail-pane">
+        <div class="detail-head">
+          <p class="detail-kicker">서울 구석</p>
+          <h2>{{ selectedDistrict?.properties.name || '구를 선택해 주세요' }}</h2>
+        </div>
+
+        <nav class="step-tabs" role="tablist" aria-label="시뮬레이션 단계">
+          <button
+            class="step-tab"
+            :class="{ 'is-active': activeStep === 1 }"
+            @click="setActiveStep(1)"
+          >
+            1. 정책 입력
+          </button>
+          <button
+            class="step-tab"
+            :class="{ 'is-active': activeStep === 2 }"
+            @click="setActiveStep(2)"
+          >
+            2. 실행 · 추이
+          </button>
+          <button
+            class="step-tab"
+            :class="{ 'is-active': activeStep === 3 }"
+            @click="setActiveStep(3)"
+          >
+            3. 실제 의견 보기
+          </button>
+        </nav>
+
+        <section v-if="activeStep === 1" class="step-panel">
+          <p class="section-kicker">정책 입력</p>
+          <div class="policy-row">
+            <label>
+              <span>시뮬레이션</span>
+              <select v-model="selectedSimulationId" class="policy-select" :disabled="scenarioLoading">
+                <option value="">시뮬레이션 선택</option>
+                <option
+                  v-for="item in simulations"
+                  :key="item.simulation_id"
+                  :value="item.simulation_id"
+                >
+                  {{ item.simulation_id }}
+                </option>
+              </select>
+            </label>
+
+            <label>
+              <span>타깃 정당</span>
+              <select v-model="selectedParty" class="policy-select" :disabled="scenarioLoading">
+                <option value="">정당 선택</option>
+                <option
+                  v-for="party in scenarioPartyOptions"
+                  :key="party"
+                  :value="party"
+                >
+                  {{ party }}
+                </option>
+              </select>
+            </label>
           </div>
-          
-          <h2 class="section-title">준비 완료</h2>
-          <p class="section-desc">
-            서울 정치 반응 엔진이 준비되어 있습니다. 정책 문서, 공약문, 구별 현안 브리프, 정치 해설을 올리면 서울 중심 시나리오를 바로 시작할 수 있습니다.
+
+          <label class="policy-textarea-wrap">
+            <span>정책안 텍스트</span>
+            <textarea
+              v-model="campaignText"
+              rows="6"
+              placeholder="정책안을 입력하면 해당 정당 지지도 변화 시뮬레이션에 반영됩니다."
+            ></textarea>
+          </label>
+
+          <div class="step-actions">
+            <button
+              class="step-primary-btn"
+              :disabled="scenarioLoading || !selectedSimulationId || !selectedParty"
+              @click="saveScenario"
+            >
+              {{ scenarioLoading ? '저장 중...' : '시나리오 저장하고 다음 단계로' }}
+            </button>
+          </div>
+        </section>
+
+        <section v-else-if="activeStep === 2" class="step-panel">
+          <div class="timeline-head">
+            <div>
+              <p class="section-kicker">실시간 지지도 변화</p>
+              <strong>{{ selectedParty }} 기준</strong>
+            </div>
+            <button
+              class="step-secondary-btn"
+              :disabled="scenarioLoading || !selectedSimulationId || !selectedParty"
+              @click="startSimulationRun"
+            >
+              {{
+                isSimulationRunning ? '실행 중...' : '지금 실행'
+              }}
+            </button>
+          </div>
+
+          <div class="timeline-chart-wrap">
+            <svg ref="supportChartSvg" class="support-chart"></svg>
+          </div>
+
+          <p class="timeline-metrics">
+            최근 라운드 {{ latestRound }} / 추정 지지도 {{ latestSupport.toFixed(1) }}%
           </p>
-          
-          <!-- Metric cards -->
-          <div class="metrics-row">
-            <div class="metric-card">
-              <div class="metric-value">구 단위 분석</div>
-              <div class="metric-label">서울 각 구의 유권자 블록과 지역 현안을 함께 모델링</div>
+          <p class="policy-status">
+            <span>{{ simulationStatusText }}</span>
+            <strong>{{ scenarioMessage }}</strong>
+          </p>
+        </section>
+
+        <section v-else class="step-panel">
+          <div class="timeline-head">
+            <div>
+              <p class="section-kicker">실시간 여론 반응</p>
+              <strong>누적 의견 피드</strong>
             </div>
-            <div class="metric-card">
-              <div class="metric-value">방향성 중심</div>
-              <div class="metric-label">지지율, 호감도, 투표의향, 스윙 변화를 함께 추적</div>
-            </div>
+            <button class="step-secondary-btn" @click="refreshOpinionFeed">
+              새로고침
+            </button>
           </div>
 
-          <!-- Workflow steps -->
-          <div class="steps-container">
-            <div class="steps-header">
-               <span class="diamond-icon">◇</span> 워크플로
-            </div>
-            <div class="workflow-list">
-              <div class="workflow-item">
-                <span class="step-num">01</span>
-                <div class="step-info">
-                  <div class="step-title">그래프 구축</div>
-                  <div class="step-desc">후보, 정당, 지역, 현안, 캠페인 관계를 정치 메모리 그래프로 정리합니다</div>
-                </div>
+          <ul v-if="opinionFeed.length > 0" class="opinion-list">
+            <li v-for="item in opinionFeed" :key="item.key">
+              <div class="opinion-headline">
+                <span class="opinion-platform">{{ actionPlatformBadge(item.platform) }}</span>
+                <strong>{{ actionDisplayName(item.action_type) }}</strong>
               </div>
-              <div class="workflow-item">
-                <span class="step-num">02</span>
-                <div class="step-info">
-                  <div class="step-title">유권자 모델링</div>
-                  <div class="step-desc">서울 유권자 블록, 이슈 민감도, 투표 성향, 구별 정치 감도를 생성합니다</div>
-                </div>
+              <p class="opinion-detail">{{ actionDisplayText(item) }}</p>
+              <div class="opinion-meta">
+                <span>라운드 {{ item.round_num }}</span>
+                <span>{{ item.timeLabel }}</span>
+                <span v-if="item.agent_name">{{ item.agent_name }}</span>
               </div>
-              <div class="workflow-item">
-                <span class="step-num">03</span>
-                <div class="step-info">
-                  <div class="step-title">캠페인 실행</div>
-                  <div class="step-desc">정책과 메시지가 유권자, 언론, 지역 서사를 따라 어떻게 퍼지는지 시뮬레이션합니다</div>
-                </div>
-              </div>
-              <div class="workflow-item">
-                <span class="step-num">04</span>
-                <div class="step-info">
-                  <div class="step-title">전략 보고서</div>
-                  <div class="step-desc">구별 변화, 리스크, 지지 신호를 전략 메모 형태로 정리합니다</div>
-                </div>
-              </div>
-              <div class="workflow-item">
-                <span class="step-num">05</span>
-                <div class="step-info">
-                  <div class="step-title">워룸 Q&A</div>
-                  <div class="step-desc">보고서를 검증하고 가정을 흔들어보며, 시뮬레이션된 유권자 블록과 직접 대화합니다</div>
-                </div>
-              </div>
-            </div>
-          </div>
+            </li>
+          </ul>
+          <p v-else class="support-empty">실행이 진행되면 이곳에 의견이 실시간으로 표시됩니다.</p>
+        </section>
+
+        <div v-if="selectedDistrict" class="district-snippet">
+          <p class="district-snippet-head">
+            현재 구 성향
+            <strong>{{ selectedDistrict.profile.dominantParty }}</strong>
+          </p>
+          <ul class="district-snippet-list">
+            <li>선거인수: {{ toPopulation(selectedDistrict.profile.electorate) }}</li>
+            <li>유효 투표수: {{ toPopulation(selectedDistrict.profile.validVotes) }}</li>
+            <li>투표율: {{ selectedDistrict.profile.turnoutPercent }}%</li>
+            <li>
+              등록인구: {{ formatPopulation(selectedDistrict.profile.populationProfile.population) }}
+              (남 {{ selectedDistrict.profile.populationProfile.maleRate }}% / 여 {{ selectedDistrict.profile.populationProfile.femaleRate }}%)
+            </li>
+          </ul>
         </div>
 
-        <!-- Right column: control console -->
-        <div class="right-panel">
-          <div class="console-box">
-            <!-- Upload area -->
-            <div class="console-section">
-              <div class="console-header">
-                <span class="console-label">01 / Source Material</span>
-                <span class="console-meta">지원 형식: PDF, MD, TXT</span>
-              </div>
-              
-              <div 
-                class="upload-zone"
-                :class="{ 'drag-over': isDragOver, 'has-files': files.length > 0 }"
-                @dragover.prevent="handleDragOver"
-                @dragleave.prevent="handleDragLeave"
-                @drop.prevent="handleDrop"
-                @click="triggerFileInput"
-              >
-                <input
-                  ref="fileInput"
-                  type="file"
-                  multiple
-                  accept=".pdf,.md,.txt"
-                  @change="handleFileSelect"
-                  style="display: none"
-                  :disabled="loading"
-                />
-                
-                <div v-if="files.length === 0" class="upload-placeholder">
-                  <div class="upload-icon">↑</div>
-                  <div class="upload-title">파일을 여기에 끌어오세요</div>
-                  <div class="upload-hint">또는 클릭해서 문서를 선택하세요</div>
-                </div>
-                
-                <div v-else class="file-list">
-                  <div v-for="(file, index) in files" :key="index" class="file-item">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">{{ file.name }}</span>
-                    <button @click.stop="removeFile(index)" class="remove-btn">×</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Divider -->
-            <div class="console-divider">
-              <span>Input Parameters</span>
-            </div>
-
-            <!-- Prompt area -->
-            <div class="console-section">
-              <div class="console-header">
-                <span class="console-label">>_ 02 / 시뮬레이션 설명</span>
-              </div>
-              <div class="input-wrapper">
-                <textarea
-                  v-model="formData.simulationRequirement"
-                  class="code-input"
-                  placeholder="// 어떤 서울 정치 시나리오를 시험할지 적어주세요. 예: 주거비 부담이 서울 핵심 이슈가 될 때, 구별 지지율·투표의향·스윙 블록은 어떻게 움직이는가?"
-                  rows="6"
-                  :disabled="loading"
-                ></textarea>
-                <div class="model-note">현재 프리셋: 서울시장 선거 및 정책 반응 시뮬레이터</div>
-                <div class="model-badge">Engine: KoreaPolicySim-V1.0</div>
-              </div>
-            </div>
-
-            <div class="console-section">
-              <div class="console-header">
-                <span class="console-label">>_ 03 / 시나리오 조건</span>
-              </div>
-              <div class="input-wrapper">
-                <div class="scenario-grid">
-                  <input
-                    v-model="formData.candidateName"
-                    class="scenario-input"
-                    placeholder="후보 이름 (선택)"
-                    :disabled="loading"
-                  />
-                  <input
-                    v-model="formData.candidateParty"
-                    class="scenario-input"
-                    placeholder="정당 또는 연합 (선택)"
-                    :disabled="loading"
-                  />
-                  <input
-                    v-model="formData.candidateSlogan"
-                    class="scenario-input"
-                    placeholder="캠페인 메시지 또는 슬로건 (선택)"
-                    :disabled="loading"
-                  />
-                  <input
-                    v-model="formData.targetDistrictsText"
-                    class="scenario-input"
-                    placeholder="대상 구, 쉼표로 구분 (비우면 서울 전체)"
-                    :disabled="loading"
-                  />
-                </div>
-                <textarea
-                  v-model="formData.campaignActionBrief"
-                  class="code-input compact"
-                  placeholder="// 정책 변화나 캠페인 신호를 적어주세요. 예: 주거비 문제가 서울 핵심 의제가 되고, 구별 언론 프레이밍이 갈리며, 임차인들이 형평성과 실현 가능성을 두고 논쟁한다."
-                  rows="4"
-                  :disabled="loading"
-                ></textarea>
-              </div>
-            </div>
-
-            <!-- Start button -->
-            <div class="console-section btn-section">
-              <button 
-                class="start-engine-btn"
-                @click="startSimulation"
-                :disabled="!canSubmit || loading"
-              >
-                <span v-if="!loading">서울 유권자 모델 만들기</span>
-                <span v-else>초기화 중...</span>
-                <span class="btn-arrow">→</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Historical projects -->
-      <HistoryDatabase />
-    </div>
-  </div>
+        <p v-else class="support-empty">지도에서 구를 클릭해서 구 정보를 확인하세요.</p>
+      </aside>
+    </section>
+  </section>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import HistoryDatabase from '../components/HistoryDatabase.vue'
+import * as d3 from 'd3'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import {
+  getPrepareStatus,
+  getRunStatus,
+  getRunStatusDetail,
+  getSimulation,
+  getSimulationTimeline,
+  listSimulations,
+  prepareSimulation,
+  startSimulation,
+  updateSimulationScenario
+} from '../api/simulation'
 
-const router = useRouter()
-
-// 表单数据
-const formData = ref({
-  simulationRequirement: '',
-  simulationPreset: 'korea_society_policy',
-  candidateName: '',
-  candidateParty: '',
-  candidateSlogan: '',
-  targetDistrictsText: 'Gangnam, Mapo, Gwanak',
-  campaignActionBrief: ''
-})
-
-// 文件列表
-const files = ref([])
-
-// 状态
-const loading = ref(false)
+const mapSvg = ref(null)
+const mapWrap = ref(null)
+const loading = ref(true)
 const error = ref('')
-const isDragOver = ref(false)
+const districtFeatures = ref([])
+const activeParty = ref('all')
+const supportChartSvg = ref(null)
+const selectedCode = ref('')
+const electionMeta = ref(null)
+const populationMeta = ref(null)
+const activeStep = ref(1)
+const scenarioSaved = ref(false)
+const opinionFeed = ref([])
 
-// 文件输入引用
-const fileInput = ref(null)
+// 시뮬레이션/정책 패널
+const simulations = ref([])
+const selectedSimulationId = ref('')
+const selectedParty = ref('더불어민주당')
+const campaignText = ref('')
+const scenarioMessage = ref('')
+const scenarioLoading = ref(false)
+const supportTimeline = ref([])
+const runStatus = ref(null)
 
-// 计算属性:是否可以提交
-const canSubmit = computed(() => {
-  return (
-    formData.value.simulationRequirement.trim() !== '' &&
-    formData.value.campaignActionBrief.trim() !== '' &&
-    files.value.length > 0
-  )
+let runStatusTimer = null
+let timelineTimer = null
+
+const partyColorMap = {
+  '더불어민주당': '#2563EB',
+  '국민의힘': '#E11D48',
+  '개혁신당': '#0EA5E9',
+  '새로운미래': '#7C3AED',
+  '녹색정의당': '#059669',
+  '무소속': '#6B7280',
+  '기타': '#94A3B8'
+}
+
+  const partyListFallback = ['더불어민주당', '국민의힘', '개혁신당', '새로운미래', '녹색정의당', '무소속', '기타']
+
+const districtProfiles = ref({})
+const legendItems = ref([
+  { id: 'all', name: '전체', color: '#0f172a' },
+  ...partyListFallback.map((party) => ({ id: party, name: party, color: partyColorMap[party] || '#94A3B8' }))
+])
+
+const normalizePopulationProfile = (districtName = '구', payload = {}) => {
+  const safePayload = payload || {}
+
+  return ({
+  name: districtName,
+  population: Number(safePayload.population) || 0,
+  male: Number(safePayload.male) || 0,
+  female: Number(safePayload.female) || 0,
+  maleRate: Number(safePayload.maleRate) || 0,
+  femaleRate: Number(safePayload.femaleRate) || 0,
+  ageGroups: Array.isArray(safePayload.ageGroups)
+    ? safePayload.ageGroups.map((group) => ({
+      label: group.label || '미지정',
+      total: Number(group.total) || 0,
+      male: Number(group.male) || 0,
+      female: Number(group.female) || 0,
+      ratio: Number(group.ratio) || 0
+    }))
+    : []
+  })
+}
+
+const makeFallbackProfile = (districtName = '구', populationProfile = {}) => ({
+  name: districtName,
+  electorate: 0,
+  validVotes: 0,
+  turnoutVotes: 0,
+  turnoutPercent: 0,
+  dominantParty: '기타',
+  support: [
+    { party: '더불어민주당', percent: 0, votes: 0 },
+    { party: '국민의힘', percent: 0, votes: 0 },
+    { party: '개혁신당', percent: 0, votes: 0 },
+    { party: '새로운미래', percent: 0, votes: 0 },
+    { party: '녹색정의당', percent: 0, votes: 0 },
+    { party: '무소속', percent: 0, votes: 0 },
+    { party: '기타', percent: 100, votes: 0 }
+  ],
+  note: '해당 구의 선거 집계 데이터가 없습니다.',
+  populationProfile: normalizePopulationProfile(districtName, populationProfile),
+  populationSource: '뉴스/보도 자료 기반 임시치, 추후 API 연동 예정'
 })
 
-// 触发文件选择
-const triggerFileInput = () => {
-  if (!loading.value) {
-    fileInput.value?.click()
+const normalizeProfile = (districtName, profile = {}, populationProfile = null) => {
+  const support = Array.isArray(profile.support) ? profile.support : []
+  const sortedSupport = support
+    .filter((item) => Number(item.percent) > 0)
+    .map((item) => ({
+      party: item.party || '기타',
+      percent: Number(item.percent) || 0,
+      votes: Number(item.votes) || 0
+    }))
+    .sort((a, b) => b.percent - a.percent)
+
+  const fallback = makeFallbackProfile(districtName)
+  const exists = new Set(sortedSupport.map((item) => item.party))
+  const merged = [...sortedSupport]
+  fallback.support.forEach((item) => {
+    if (!exists.has(item.party)) {
+      merged.push(item)
+    }
+  })
+
+  const dominant = sortedSupport[0]?.party || fallback.dominantParty
+
+  return {
+    ...fallback,
+    populationProfile: normalizePopulationProfile(districtName, populationProfile),
+    name: districtName,
+    electorate: Number(profile.electorate) || 0,
+    validVotes: Number(profile.validVotes) || 0,
+    turnoutVotes: Number(profile.turnoutVotes) || 0,
+    turnoutPercent: Number(profile.turnoutPercent) || 0,
+    dominantParty: profile.dominantParty || dominant,
+    support: merged,
+    note: profile.note || fallback.note,
+    populationSource: profile.populationSource || fallback.populationSource
   }
 }
 
-// 处理文件选择
-const handleFileSelect = (event) => {
-  const selectedFiles = Array.from(event.target.files)
-  addFiles(selectedFiles)
+const defaultProfile = {
+  ...makeFallbackProfile('기본값'),
+  note: '선거 집계 데이터가 준비되지 않았습니다.'
 }
 
-// 处理拖拽相关
-const handleDragOver = (e) => {
-  if (!loading.value) {
-    isDragOver.value = true
+const activePartyLabel = computed(() => {
+  if (activeParty.value === 'all') return '전체'
+  return legendItems.value.find((item) => item.id === activeParty.value)?.name || '전체'
+})
+
+const dataSourceLabel = computed(() => {
+  const electionSource = electionMeta.value?.source || '미확인 선거 데이터'
+  const popSource = populationMeta.value?.source || '미확인 인구 데이터'
+  return `선거=${electionSource} / 인구=${popSource}`
+})
+
+const selectedDistrict = computed(() => {
+  return districtFeatures.value.find((d) => d.properties.code === selectedCode.value)
+    || districtFeatures.value[0]
+})
+
+const partyColor = (party) => partyColorMap[party] || '#94A3B8'
+
+const toPopulation = (value) => `${Number(value || 0).toLocaleString('ko-KR')}명`
+const formatPopulation = (value) => `${Number(value || 0).toLocaleString('ko-KR')}명`
+
+const setPartyFilter = (partyId) => {
+  activeParty.value = partyId
+  drawMap()
+}
+
+const selectedSimulation = computed(() => {
+  return simulations.value.find((item) => item.simulation_id === selectedSimulationId.value) || null
+})
+
+const isSimulationRunning = computed(() => {
+  return ['running', 'starting'].includes(runStatus.value?.runner_status)
+})
+
+const setActiveStep = (step) => {
+  activeStep.value = step
+}
+
+const actionDisplayName = (actionType = '') => {
+  const actionTypeLabelMap = {
+    policy_clarification: '정책 설명',
+    district_targeted_message: '구별 메시지',
+    attack: '공격 대응',
+    apology: '사과/입장 정정',
+    endorsement: '지지 표명',
+    pledge_release: '공약 발표',
+    debate_response: '토론 반응',
+    scandal_response: '스캔들 대응',
+    CREATE_POST: '게시글 생성',
+    COMMENT_ANSWER: '댓글 응답',
+    policy_update: '정책 업데이트',
+    neutralization: '반응 정리'
+  }
+
+  return actionTypeLabelMap[actionType] || actionType || '의견 발언'
+}
+
+const actionDisplayText = (action = {}) => {
+  const args = action.action_args || {}
+  const result = action.result || {}
+  if (typeof args.content === 'string' && args.content.trim()) return args.content.trim()
+  if (typeof args.text === 'string' && args.text.trim()) return args.text.trim()
+  if (typeof args.message === 'string' && args.message.trim()) return args.message.trim()
+  if (typeof result.content === 'string' && result.content.trim()) return result.content.trim()
+  if (typeof result.message === 'string' && result.message.trim()) return result.message.trim()
+
+  return '실시간 의견이 기록되었습니다.'
+}
+
+const actionPlatformBadge = (platform = '') => {
+  if (platform === 'reddit') return 'Reddit'
+  if (platform === 'twitter') return 'X'
+  return platform || 'OPINION'
+}
+
+const actionTimeLabel = (raw) => {
+  if (!raw) return ''
+  const date = new Date(raw)
+  if (Number.isNaN(date.getTime())) return ''
+
+  return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+}
+
+const scenarioPartyOptions = computed(() => {
+  const optionSet = new Set()
+  partyListFallback.forEach((party) => optionSet.add(party))
+
+  const simulationParty = selectedSimulation.value?.candidate_profiles || []
+  simulationParty.forEach((item) => {
+    if (typeof item === 'string') {
+      optionSet.add(item)
+    } else if (item?.party) {
+      optionSet.add(item.party)
+    } else if (item?.candidate_name) {
+      optionSet.add(item.candidate_name)
+    }
+  })
+
+  return Array.from(optionSet)
+})
+
+const simulationStatusText = computed(() => {
+  if (runStatus.value?.runner_status) {
+    const map = {
+      running: '실시간 실행 중',
+      starting: '시작 대기',
+      completed: '완료',
+      failed: '실패',
+      stopped: '중단',
+      idle: '대기 중'
+    }
+    return map[runStatus.value.runner_status] || runStatus.value.runner_status
+  }
+
+  return selectedSimulation.value?.status || '미실행'
+})
+
+const latestRound = computed(() => {
+  const list = supportTimeline.value
+  if (!list || list.length === 0) return 0
+  return list[list.length - 1]?.round_num || 0
+})
+
+const latestSupport = computed(() => {
+  const list = supportTimeline.value
+  if (!list || list.length === 0) return 50
+  return list[list.length - 1]?.support_snapshot ?? 50
+})
+
+const normalizeOpinionItems = (items = []) => {
+  return (items || []).map((item, index) => ({
+    ...item,
+    key: `${item.timestamp || item.created_at || '0'}-${item.platform || 'platform'}-${item.agent_id || index}-${index}`,
+    timeLabel: actionTimeLabel(item.timestamp || item.created_at)
+  }))
+}
+
+const stopRealtimePolling = () => {
+  if (runStatusTimer) {
+    clearInterval(runStatusTimer)
+    runStatusTimer = null
+  }
+
+  if (timelineTimer) {
+    clearInterval(timelineTimer)
+    timelineTimer = null
   }
 }
 
-const handleDragLeave = (e) => {
-  isDragOver.value = false
-}
+const waitUntilPrepared = async (simulationId, taskId = null) => {
+  let attempts = 0
+  const maxAttempts = 240
 
-const handleDrop = (e) => {
-  isDragOver.value = false
-  if (loading.value) return
-  
-  const droppedFiles = Array.from(e.dataTransfer.files)
-  addFiles(droppedFiles)
-}
-
-// 添加文件
-const addFiles = (newFiles) => {
-  const validFiles = newFiles.filter(file => {
-    const ext = file.name.split('.').pop().toLowerCase()
-    return ['pdf', 'md', 'txt'].includes(ext)
-  })
-  files.value.push(...validFiles)
-}
-
-// 移除文件
-const removeFile = (index) => {
-  files.value.splice(index, 1)
-}
-
-// 滚动到底部
-const scrollToBottom = () => {
-  window.scrollTo({
-    top: document.body.scrollHeight,
-    behavior: 'smooth'
-  })
-}
-
-// 开始模拟 - 立即跳转，API调用在Process页面进行
-const startSimulation = () => {
-  if (!canSubmit.value || loading.value) return
-  
-  // 存储待上传的数据
-  import('../store/pendingUpload.js').then(({ setPendingUpload }) => {
-    setPendingUpload(
-      files.value,
-      formData.value.simulationRequirement,
-      formData.value.simulationPreset,
-      {
-        raceType: 'seoul_mayor',
-        targetCity: 'Seoul',
-        targetDistricts: formData.value.targetDistrictsText
-          .split(',')
-          .map(item => item.trim())
-          .filter(Boolean),
-        candidateProfiles: formData.value.candidateName.trim()
-          ? [{
-              name: formData.value.candidateName.trim(),
-              party: formData.value.candidateParty.trim(),
-              slogan: formData.value.candidateSlogan.trim()
-            }]
-          : [],
-        campaignActionBrief: formData.value.campaignActionBrief.trim()
-      }
-    )
-    
-    // 立即跳转到Process页面（使用特殊标识表示新建项目）
-    router.push({
-      name: 'Process',
-      params: { projectId: 'new' }
+  while (attempts < maxAttempts) {
+    const check = await getPrepareStatus({
+      simulation_id: simulationId,
+      task_id: taskId
     })
-  })
+
+    const data = check.data
+    if (data?.status === 'ready' || data?.status === 'completed') {
+      return
+    }
+
+    if (data?.status === 'error' || data?.status === 'failed') {
+      throw new Error(data?.error || 'Prepare failed')
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 1200))
+    attempts += 1
+  }
+
+  throw new Error('시뮬레이션 준비가 4분 초과되어 중단되었습니다.')
 }
+
+const pollSimulationStatus = async () => {
+  if (!selectedSimulationId.value) return
+
+  try {
+    const statusResponse = await getRunStatus(selectedSimulationId.value)
+    const detailResponse = await getRunStatusDetail(selectedSimulationId.value)
+    runStatus.value = statusResponse.data
+
+    if (detailResponse?.data) {
+      const detailed = detailResponse.data
+      runStatus.value = {
+        ...runStatus.value,
+        ...detailed
+      }
+
+      if (Array.isArray(detailed.recent_actions)) {
+        opinionFeed.value = normalizeOpinionItems(detailed.recent_actions)
+      } else if (Array.isArray(detailed.all_actions)) {
+        opinionFeed.value = normalizeOpinionItems(detailed.all_actions)
+      }
+    }
+
+    const timelineResponse = await getSimulationTimeline(
+      selectedSimulationId.value,
+      0,
+      null,
+      selectedParty.value
+    )
+    supportTimeline.value = timelineResponse.data?.timeline || []
+
+    drawSupportChart()
+
+    if (
+      runStatus.value?.runner_status &&
+      !['running', 'starting'].includes(runStatus.value.runner_status)
+    ) {
+      stopRealtimePolling()
+    }
+  } catch (e) {
+    console.error('pollSimulationStatus failed', e)
+  }
+}
+
+const startRealtimePolling = () => {
+  stopRealtimePolling()
+  runStatusTimer = setInterval(() => {
+    pollSimulationStatus()
+  }, 1500)
+
+  pollSimulationStatus()
+}
+
+const loadSimulationDetails = async (simulationId) => {
+  const detailResponse = await getSimulation(simulationId)
+  const data = detailResponse.data || null
+
+  campaignText.value = (data?.campaign_action_brief || '').replace(/^\[선정 정당:[^\]]+\]\s*/g, '').trim()
+
+  const candidateProfiles = Array.isArray(data?.candidate_profiles) ? data.candidate_profiles : []
+  const firstProfileParty = candidateProfiles.find((item) => {
+    if (typeof item === 'string') return item
+    return item?.party || item?.candidate_name
+  })
+
+  const normalizedFirst =
+    typeof firstProfileParty === 'string'
+      ? firstProfileParty
+      : firstProfileParty?.party || firstProfileParty?.candidate_name
+
+  if (normalizedFirst && !selectedParty.value) {
+    selectedParty.value = normalizedFirst
+  }
+
+  if (!selectedParty.value && scenarioPartyOptions.value.length > 0) {
+    selectedParty.value = scenarioPartyOptions.value[0]
+  }
+
+  scenarioSaved.value = false
+
+  runStatus.value = {
+    runner_status: data?.status || 'idle'
+  }
+
+  opinionFeed.value = []
+}
+
+const loadSimulations = async () => {
+  const response = await listSimulations()
+  simulations.value = response.data || []
+
+  if (!selectedSimulationId.value && simulations.value.length > 0) {
+    selectedSimulationId.value = simulations.value[0].simulation_id
+    await loadSimulationDetails(simulations.value[0].simulation_id)
+  }
+}
+
+const saveScenario = async () => {
+  if (!selectedSimulationId.value) {
+    scenarioMessage.value = '시뮬레이션을 먼저 선택해 주세요.'
+    return
+  }
+
+  if (!selectedParty.value) {
+    scenarioMessage.value = '정당을 먼저 선택해 주세요.'
+    return
+  }
+
+  scenarioLoading.value = true
+  scenarioMessage.value = '시나리오를 반영하고 있습니다.'
+
+  try {
+    await updateSimulationScenario(selectedSimulationId.value, {
+      selected_party: selectedParty.value,
+      campaign_action_brief: campaignText.value
+    })
+    scenarioSaved.value = true
+    scenarioMessage.value = '시나리오가 저장되었습니다. 다음 단계에서 실행해 주세요.'
+    activeStep.value = 2
+  } catch (e) {
+    scenarioMessage.value = `실행 중 오류: ${e?.message || '알 수 없는 오류'}`
+    stopRealtimePolling()
+  } finally {
+    scenarioLoading.value = false
+  }
+}
+
+const startSimulationRun = async () => {
+  if (!selectedSimulationId.value) {
+    scenarioMessage.value = '시뮬레이션을 먼저 선택해 주세요.'
+    return
+  }
+
+  if (!selectedParty.value) {
+    scenarioMessage.value = '정당을 먼저 선택해 주세요.'
+    return
+  }
+
+  if (!scenarioSaved.value) {
+    scenarioMessage.value = '정책과 정당 설정을 먼저 저장해 주세요.'
+    activeStep.value = 1
+    return
+  }
+
+  scenarioLoading.value = true
+  scenarioMessage.value = '시뮬레이션을 준비하고 실행을 시작합니다.'
+
+  try {
+    const prepareResult = await prepareSimulation({
+      simulation_id: selectedSimulationId.value
+    })
+
+    const prepareData = prepareResult.data || {}
+    if (!prepareData.already_prepared && prepareData.task_id) {
+      await waitUntilPrepared(selectedSimulationId.value, prepareData.task_id)
+    }
+
+    await startSimulation({
+      simulation_id: selectedSimulationId.value,
+      platform: 'parallel',
+      force: true
+    })
+
+    scenarioMessage.value = '실행 중입니다. 추이와 의견을 함께 확인해 주세요.'
+    startRealtimePolling()
+    activeStep.value = 2
+  } catch (e) {
+    scenarioMessage.value = `실행 중 오류: ${e?.message || '알 수 없는 오류'}`
+    stopRealtimePolling()
+  } finally {
+    scenarioLoading.value = false
+  }
+}
+
+const refreshOpinionFeed = async () => {
+  if (!selectedSimulationId.value) return
+
+  try {
+    const response = await getRunStatusDetail(selectedSimulationId.value)
+    const detail = response?.data || {}
+    const source = detail.recent_actions || detail.all_actions || []
+    opinionFeed.value = normalizeOpinionItems(source)
+  } catch (e) {
+    console.error('refreshOpinionFeed failed', e)
+  }
+}
+
+const drawSupportChart = async () => {
+  if (!supportChartSvg.value) return
+
+  const svg = d3.select(supportChartSvg.value)
+  const hostRect = supportChartSvg.value.parentElement?.getBoundingClientRect() || { width: 520, height: 220 }
+  const width = Math.max(320, Math.round(hostRect.width || 520))
+  const height = Math.max(180, Math.round(hostRect.height || 220))
+  const margin = { top: 14, right: 16, bottom: 24, left: 42 }
+
+  supportChartSvg.value.setAttribute('viewBox', `0 0 ${width} ${height}`)
+  svg.selectAll('*').remove()
+
+  if (!supportTimeline.value.length) {
+    svg.append('text')
+      .attr('x', margin.left)
+      .attr('y', height / 2)
+      .attr('fill', '#94a3b8')
+      .attr('font-size', 12)
+      .text('실행을 시작하면 라운드별 지지도 추세가 표시됩니다.')
+
+    return
+  }
+
+  const chartData = supportTimeline.value
+    .map((item) => ({
+      round_num: Number(item.round_num || 0),
+      support_snapshot: Number(item.support_snapshot || 50)
+    }))
+    .sort((a, b) => a.round_num - b.round_num)
+
+  const x = d3.scaleLinear()
+    .domain(d3.extent(chartData, (item) => item.round_num))
+    .range([margin.left, width - margin.right])
+
+  const y = d3.scaleLinear()
+    .domain([0, 100])
+    .range([height - margin.bottom, margin.top])
+
+  const axisY = d3.axisLeft(y)
+    .ticks(5)
+    .tickSize(-(width - margin.left - margin.right))
+
+  const axisX = d3.axisBottom(x)
+    .ticks(Math.min(8, Math.max(2, chartData.length)))
+
+  svg
+    .append('g')
+    .attr('transform', `translate(${margin.left},0)`)
+    .call(d3.axisLeft(y).ticks(5).tickSize(0))
+    .selectAll('text')
+    .attr('fill', '#94a3b8')
+
+  svg
+    .append('g')
+    .attr('transform', `translate(0, ${height - margin.bottom})`)
+    .call(axisX)
+    .selectAll('text')
+    .attr('fill', '#94a3b8')
+
+  svg
+    .append('g')
+    .attr('transform', `translate(${margin.left},0)`)
+    .call(axisY)
+    .selectAll('text')
+    .attr('fill', '#94a3b8')
+
+  svg.selectAll('.tick line')
+    .attr('stroke', 'rgba(148, 163, 184, 0.2)')
+
+  const line = d3.line()
+    .x((d) => x(d.round_num))
+    .y((d) => y(d.support_snapshot))
+    .curve(d3.curveMonotoneX)
+
+  svg
+    .append('path')
+    .datum(chartData)
+    .attr('fill', 'none')
+    .attr('stroke', '#60a5fa')
+    .attr('stroke-width', 2.6)
+    .attr('d', line)
+
+  svg
+    .selectAll('circle')
+    .data(chartData)
+    .join('circle')
+    .attr('cx', (d) => x(d.round_num))
+    .attr('cy', (d) => y(d.support_snapshot))
+    .attr('r', 3)
+    .attr('fill', '#dbeafe')
+
+  const lastItem = chartData[chartData.length - 1]
+  svg
+    .append('text')
+    .attr('x', width - margin.right)
+    .attr('y', y(lastItem.support_snapshot) - 6)
+    .attr('text-anchor', 'end')
+    .attr('fill', '#e2e8f0')
+    .attr('font-size', '12px')
+    .text(`${lastItem.support_snapshot.toFixed(1)}%`)
+}
+
+const drawMap = async () => {
+  if (!mapSvg.value || districtFeatures.value.length === 0) return
+
+  const svg = d3.select(mapSvg.value)
+  const wrapRect = mapWrap.value?.getBoundingClientRect()
+  const width = Math.max(320, Math.round(wrapRect?.width || 940))
+  const height = Math.max(260, Math.round(width * 0.7))
+
+  mapSvg.value.setAttribute('viewBox', `0 0 ${width} ${height}`)
+  svg.selectAll('*').remove()
+
+  const projection = d3.geoMercator()
+    .fitSize([width - 80, height - 80], {
+      type: 'FeatureCollection',
+      features: districtFeatures.value
+    })
+
+  const path = d3.geoPath(projection)
+  const zoom = 1.1
+  const g = svg
+    .append('g')
+    .attr('transform', `translate(${(width - 80) * 0.06}, ${(height - 80) * 0.06}) scale(${zoom})`)
+
+  const districts = g
+    .selectAll('.district')
+    .data(districtFeatures.value)
+    .join('path')
+    .attr('class', 'district')
+    .attr('d', path)
+    .attr('data-code', (d) => d.properties.code)
+    .attr('fill', (d) => {
+      const party = d.profile?.dominantParty || '기타'
+      const dimmed = activeParty.value !== 'all' && party !== activeParty.value
+      return dimmed ? d3.color(partyColor(party)).copy({ opacity: 0.25 }) : partyColor(party)
+    })
+    .attr('stroke', '#ffffffd9')
+    .attr('stroke-width', 1.2)
+    .attr('cursor', 'pointer')
+    .on('click', (_, feature) => {
+      selectedCode.value = feature.properties.code
+      drawMap()
+    })
+    .on('mouseenter', (event, feature) => {
+      const shape = d3.select(event.currentTarget)
+      shape.attr('stroke', '#111827')
+      shape.attr('stroke-width', 2.2)
+    })
+    .on('mouseleave', () => {
+      drawMap()
+    })
+
+  districts.each((feature, index, nodes) => {
+    const isActive = feature.properties.code === selectedCode.value
+    const isFiltered = activeParty.value === 'all' || feature.profile?.dominantParty === activeParty.value
+    const node = d3.select(nodes[index])
+    node.classed('is-selected', isActive)
+    node.classed('is-filtered', isFiltered)
+    node.attr('opacity', isFiltered ? 1 : 0.25)
+  })
+
+  const centroidGroup = g.append('g')
+    .attr('class', 'district-label-group')
+    .attr('pointer-events', 'none')
+
+  centroidGroup
+    .selectAll('text')
+    .data(districtFeatures.value)
+    .join('text')
+    .attr('text-anchor', 'middle')
+    .attr('dy', '.35em')
+    .text((d) => d.profile ? d.profile.dominantParty : '기타')
+    .attr('font-size', '10px')
+    .attr('font-family', 'JetBrains Mono, monospace')
+    .attr('fill', '#0f172a')
+    .attr('x', (d) => {
+      const c = path.centroid(d)
+      return c[0] || 0
+    })
+    .attr('y', (d) => {
+      const c = path.centroid(d)
+      return c[1] || 0
+    })
+    .attr('opacity', 0.65)
+    .style('paint-order', 'stroke')
+    .style('stroke', '#ffffff')
+    .style('stroke-width', '2.2px')
+    .style('display', () => (activeParty.value === 'all' ? 'none' : 'block'))
+
+  await nextTick()
+}
+
+const loadMapData = async () => {
+  loading.value = true
+  error.value = ''
+  try {
+    const [mapResponse, profileResponse, populationResponse] = await Promise.all([
+      fetch('/seoul/seoul-municipalities-geo.json'),
+      fetch('/seoul/party-support-2024.json'),
+      fetch('/seoul/district-population-2026-02-28.json')
+    ])
+
+    if (!mapResponse.ok) {
+      throw new Error('서울 구 경계 데이터를 불러오지 못했습니다.')
+    }
+    if (!profileResponse.ok) {
+      throw new Error('서울 구 선거 득표 데이터를 불러오지 못했습니다.')
+    }
+
+    const [geo, profilePayload] = await Promise.all([
+      mapResponse.json(),
+      profileResponse.json()
+    ])
+
+    let populationPayload = { districts: [] }
+    if (populationResponse.ok) {
+      populationPayload = await populationResponse.json()
+    }
+
+    const populationByName = {}
+    ;(populationPayload?.districts || []).forEach((item) => {
+      if (item?.name) {
+        populationByName[item.name] = item
+      }
+    })
+
+    const profileByName = {}
+    ;(profilePayload?.districts || []).forEach((item) => {
+      const normalized = normalizeProfile(item?.name, item, populationByName[item?.name])
+      profileByName[normalized.name] = normalized
+      districtProfiles.value[normalized.name] = normalized
+    })
+
+    electionMeta.value = profilePayload?.metadata || null
+    populationMeta.value = populationPayload?.metadata || null
+
+    const parties = (electionMeta.value?.parties || partyListFallback).filter((party) => typeof party === 'string' && party)
+    legendItems.value = [
+      { id: 'all', name: '전체', color: '#0f172a' },
+      ...parties.map((party) => ({ id: party, name: party, color: partyColorMap[party] || '#94A3B8' }))
+    ]
+
+    districtFeatures.value = geo.features.map((feature) => {
+      const name = feature.properties?.name
+      const profile = profileByName[name] || normalizeProfile(name, defaultProfile, populationByName[name])
+      return {
+        ...feature,
+        profile,
+        properties: {
+          ...feature.properties,
+          population: profile.populationProfile.population
+        }
+      }
+    })
+    districtFeatures.value.sort((a, b) => a.properties.name.localeCompare(b.properties.name))
+    selectedCode.value = districtFeatures.value[0]?.properties.code || ''
+    loading.value = false
+    await nextTick()
+    drawMap()
+  } catch (e) {
+    error.value = e.message
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  Promise.all([loadMapData(), loadSimulations()])
+})
+
+onUnmounted(() => {
+  stopRealtimePolling()
+})
+
+watch(() => [activeParty.value, selectedCode.value], () => {
+  if (!loading.value) {
+    drawMap()
+  }
+})
+
+watch(() => selectedSimulationId.value, async (value) => {
+  if (!value) return
+  stopRealtimePolling()
+  await loadSimulationDetails(value)
+  scenarioMessage.value = ''
+  scenarioSaved.value = false
+  activeStep.value = 1
+})
+
+watch(() => supportTimeline.value, () => {
+  nextTick(() => {
+    drawSupportChart()
+  })
+}, {
+  deep: true
+})
+
+watch(() => selectedParty.value, () => {
+  if (!supportTimeline.value.length) return
+  pollSimulationStatus()
+  scenarioSaved.value = false
+})
 </script>
 
 <style scoped>
-/* 全局变量与重置 */
-:root {
-  --black: #000000;
-  --white: #FFFFFF;
-  --orange: #FF4500;
-  --gray-light: #F5F5F5;
-  --gray-text: #666666;
-  --border: #E5E5E5;
-  /* 
-    使用 Space Grotesk 作为主要标题字体，JetBrains Mono 作为代码/标签字体
-    确保已在 index.html 引入这些 Google Fonts 
-  */
-  --font-mono: 'JetBrains Mono', monospace;
-  --font-sans: 'Space Grotesk', 'Noto Sans SC', system-ui, sans-serif;
-  --font-cn: 'Noto Sans SC', system-ui, sans-serif;
-}
-
-.home-container {
+.seoul-page {
   min-height: 100vh;
+  padding: 28px 24px 48px;
   background:
-    radial-gradient(circle at top right, rgba(255, 69, 0, 0.1), transparent 28%),
-    linear-gradient(180deg, #fffdf9 0%, #ffffff 32%, #faf7f2 100%);
-  font-family: var(--font-sans);
-  color: var(--black);
+    linear-gradient(145deg, #111827 0%, #1e293b 30%, #334155 100%);
+  color: #e2e8f0;
+  font-family: 'Space Grotesk', 'Noto Sans SC', system-ui, sans-serif;
 }
 
-/* 顶部导航 */
-.navbar {
-  height: 60px;
-  background: var(--black);
-  color: var(--white);
+.hero {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 14px 0 24px;
+}
+
+.hero-eyebrow {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  color: #cbd5e1;
+}
+
+.hero h1 {
+  margin: 12px 0 8px;
+  color: #f8fafc;
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  letter-spacing: -0.02em;
+}
+
+.hero-copy {
+  margin: 0;
+  max-width: 880px;
+  color: #cbd5e1;
+  line-height: 1.8;
+}
+
+.main-grid {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(340px, 0.9fr);
+  gap: 28px;
+}
+
+.map-shell {
+  padding: 16px;
+  border: 1px solid rgba(226, 232, 240, 0.2);
+  border-radius: 16px;
+  position: relative;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(59, 130, 246, 0.28), transparent 34%),
+    linear-gradient(175deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 1));
+  box-shadow: 0 28px 68px rgba(2, 6, 23, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.map-frame {
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  background:
+    linear-gradient(125deg, rgba(30, 41, 59, 0.94), rgba(15, 23, 42, 0.96));
+  min-height: 640px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 40px;
+  align-items: stretch;
 }
 
-.nav-brand {
-  font-family: var(--font-mono);
-  font-weight: 800;
-  letter-spacing: 1px;
-  font-size: 1.2rem;
+.map-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
 }
 
-.nav-links {
+.map-lights,
+.map-shadow {
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.map-lights {
+  top: -20px;
+  right: 10%;
+  background: radial-gradient(circle, rgba(96, 165, 250, 0.26), transparent 70%);
+  filter: blur(2px);
+}
+
+.map-shadow {
+  bottom: 12px;
+  left: 14%;
+  background: radial-gradient(circle, rgba(15, 23, 42, 0.22), transparent 72%);
+}
+
+.seoul-map {
+  width: 100%;
+  height: 760px;
+  min-height: 620px;
+  transform: translateZ(0);
+}
+
+.step-tabs {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.step-tab {
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(15, 23, 42, 0.82);
+  color: #cbd5e1;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+  font-size: 0.78rem;
+  transition: 160ms ease;
+}
+
+.step-tab.is-active {
+  border-color: rgba(96, 165, 250, 0.85);
+  color: #f8fafc;
+  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.45);
+}
+
+.step-panel {
+  margin-top: 12px;
+  background: rgba(2, 6, 23, 0.52);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.section-kicker {
+  margin: 0 0 8px;
+  color: #94a3b8;
+  font-size: 0.76rem;
+  letter-spacing: 0.05em;
+}
+
+.step-actions {
+  margin-top: 10px;
+}
+
+.step-primary-btn,
+.step-secondary-btn {
+  border: 0;
+  border-radius: 10px;
+  font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  height: 40px;
+  padding: 0 14px;
+}
+
+.step-primary-btn {
+  width: 100%;
+  color: #0f172a;
+  background: linear-gradient(130deg, #38bdf8, #818cf8);
+}
+
+.step-primary-btn:disabled {
+  cursor: not-allowed;
+  background: #334155;
+  color: #94a3b8;
+}
+
+.step-secondary-btn {
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.step-secondary-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.opinion-list {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.github-link {
-  color: var(--white);
-  text-decoration: none;
-  font-family: var(--font-mono);
-  font-size: 0.9rem;
-  font-weight: 500;
+.opinion-list li {
+  background: rgba(15, 23, 42, 0.58);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.opinion-headline {
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: opacity 0.2s;
+  font-size: 0.82rem;
 }
 
-.github-link:hover {
-  opacity: 0.8;
-}
-
-.arrow {
-  font-family: sans-serif;
-}
-
-/* 主要内容区 */
-.main-content {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 60px 40px;
-}
-
-/* Hero 区域 */
-.hero-section {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 80px;
-  position: relative;
-  align-items: stretch;
-  gap: 48px;
-}
-
-.hero-left {
-  flex: 1;
-  padding-right: 60px;
-}
-
-.tag-row {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 25px;
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-}
-
-.orange-tag {
-  background: var(--orange);
-  color: var(--white);
-  padding: 4px 10px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  font-size: 0.75rem;
-}
-
-.version-text {
-  color: #999;
-  font-weight: 500;
-  letter-spacing: 0.5px;
-}
-
-.main-title {
-  font-size: 4.5rem;
-  line-height: 1.2;
-  font-weight: 600;
-  margin: 0 0 32px 0;
-  letter-spacing: -2px;
-  color: var(--black);
-  max-width: 780px;
-}
-
-.gradient-text {
-  background: linear-gradient(90deg, #111111 0%, #ff4500 80%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  display: inline-block;
-}
-
-.hero-desc {
-  font-size: 1.05rem;
-  line-height: 1.8;
-  color: var(--gray-text);
-  max-width: 640px;
-  margin-bottom: 50px;
-  font-weight: 400;
-  text-align: justify;
-}
-
-.hero-desc p {
-  margin-bottom: 1.5rem;
-}
-
-.highlight-bold {
-  color: var(--black);
-  font-weight: 700;
-}
-
-.highlight-orange {
-  color: var(--orange);
-  font-weight: 700;
-  font-family: var(--font-mono);
-}
-
-.highlight-code {
-  background: rgba(0, 0, 0, 0.05);
-  padding: 2px 6px;
-  border-radius: 2px;
-  font-family: var(--font-mono);
-  font-size: 0.9em;
-  color: var(--black);
+.opinion-headline strong {
+  color: #f8fafc;
   font-weight: 600;
 }
 
-.slogan-text {
-  font-size: 1.2rem;
-  font-weight: 520;
-  color: var(--black);
-  letter-spacing: 1px;
-  border-left: 3px solid var(--orange);
-  padding-left: 15px;
-  margin-top: 20px;
-}
-
-.hero-brief {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  max-width: 760px;
-  margin-bottom: 32px;
-}
-
-.brief-card {
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: rgba(255, 255, 255, 0.78);
-  backdrop-filter: blur(8px);
-  padding: 16px 18px;
-}
-
-.brief-label {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  color: #777;
-  text-transform: uppercase;
+.opinion-platform {
+  font-size: 0.68rem;
   letter-spacing: 0.08em;
-  margin-bottom: 8px;
-}
-
-.brief-value {
-  font-size: 0.98rem;
-  font-weight: 600;
-  color: #111;
-  line-height: 1.4;
-}
-
-.blinking-cursor {
-  color: var(--orange);
-  animation: blink 1s step-end infinite;
-  font-weight: 700;
-}
-
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-
-.decoration-square {
-  width: 16px;
-  height: 16px;
-  background: var(--orange);
-}
-
-.hero-right {
-  flex: 0.8;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: flex-end;
-}
-
-.hero-visual {
-  width: 100%;
-  min-height: 520px;
-  padding: 28px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(247, 241, 233, 0.96)),
-    linear-gradient(180deg, rgba(255, 69, 0, 0.08), transparent);
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
-}
-
-.visual-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  position: relative;
-  z-index: 1;
-}
-
-.visual-kicker {
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  color: #555;
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: rgba(96, 165, 250, 0.16);
+  color: #93c5fd;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
 }
 
-.visual-badge {
-  font-family: var(--font-mono);
+.opinion-detail {
+  margin: 8px 0 4px;
+  color: #cbd5e1;
+  line-height: 1.5;
+  font-size: 0.82rem;
+  white-space: pre-wrap;
+}
+
+.opinion-meta {
+  margin: 0;
+  color: #94a3b8;
   font-size: 0.72rem;
-  color: #fff;
-  background: #111;
-  padding: 7px 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.district-snippet {
+  margin-top: 12px;
+  border-radius: 12px;
+  background: rgba(30, 41, 59, 0.64);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  padding: 10px 12px;
+}
+
+.district-snippet-head {
+  margin: 0 0 8px;
+  color: #cbd5e1;
+  font-size: 0.84rem;
+  display: flex;
+  justify-content: space-between;
+}
+
+.district-snippet-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 5px;
+  color: #e2e8f0;
+  font-size: 0.79rem;
+}
+
+.district {
+  transition: transform 220ms ease, opacity 180ms ease, stroke 160ms ease;
+  transform-origin: center center;
+  filter: drop-shadow(0 2px 4px rgba(2, 6, 23, 0.25));
+}
+
+.district.is-selected {
+  stroke: #f8fafc;
+  stroke-width: 2.2px;
+  filter: drop-shadow(0 8px 14px rgba(2, 6, 23, 0.45));
+}
+
+.district.is-filtered {
+  transition: opacity 200ms ease;
+}
+
+.district:hover {
+  transform: scale(1.015);
+}
+
+.map-mask {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  color: #f8fafc;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 4;
+}
+
+.map-mask--error {
+  background: rgba(127, 29, 29, 0.8);
+}
+
+.legend-row {
+  position: relative;
+  z-index: 6;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+  padding-top: 10px;
+}
+
+.legend-pill {
+  border: 1px solid rgba(226, 232, 240, 0.22);
+  background: rgba(15, 23, 42, 0.7);
+  color: #e2e8f0;
+  padding: 10px 12px;
+  border-radius: 999px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: 180ms;
+  position: relative;
+}
+
+.legend-pill::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--party-color);
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.legend-pill span {
+  margin-left: 14px;
+}
+
+.legend-pill.active,
+.legend-pill:hover {
+  background: rgba(241, 245, 249, 0.12);
+  border-color: rgba(241, 245, 249, 0.45);
+}
+
+.detail-pane {
+  border: 1px solid rgba(226, 232, 240, 0.2);
+  border-radius: 16px;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.84);
+  backdrop-filter: blur(3px);
+  box-shadow: 0 18px 30px rgba(2, 6, 23, 0.45);
+}
+
+.detail-head {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+}
+
+.policy-ops {
+  background: rgba(2, 6, 23, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.policy-kicker {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.76rem;
   letter-spacing: 0.06em;
 }
 
-.visual-grid {
+.policy-row {
   display: grid;
-  grid-template-columns: 1.2fr 0.9fr;
-  grid-template-rows: auto auto;
-  gap: 16px;
-  margin-top: 18px;
-  position: relative;
-  z-index: 1;
-}
-
-.visual-panel {
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: rgba(255, 255, 255, 0.82);
-  padding: 18px;
-  backdrop-filter: blur(6px);
-}
-
-.scoreboard {
-  grid-row: 1 / span 2;
-}
-
-.panel-topline {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  color: #777;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 14px;
-}
-
-.score-title {
-  font-size: 1.6rem;
-  line-height: 1.2;
-  font-weight: 700;
-  color: #111;
-  max-width: 280px;
-  margin-bottom: 22px;
-}
-
-.signal-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.signal-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  font-size: 0.9rem;
-}
-
-.signal-item strong {
-  font-family: var(--font-mono);
-  font-size: 0.84rem;
-  color: #111;
-}
-
-.signal-item.negative strong {
-  color: #b63d00;
-}
-
-.district-stack {
-  display: flex;
-  flex-direction: column;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
 
-.district-pill {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 14px;
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-.district-pill.gain {
-  background: linear-gradient(90deg, rgba(255, 112, 67, 0.2), rgba(255,255,255,0.9));
-}
-
-.district-pill.soft-gain {
-  background: linear-gradient(90deg, rgba(255, 184, 77, 0.18), rgba(255,255,255,0.9));
-}
-
-.district-pill.flat {
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0.05), rgba(255,255,255,0.95));
-}
-
-.narrative-card {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.narrative-flow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 18px;
-}
-
-.flow-node {
-  font-family: var(--font-mono);
-  font-size: 0.82rem;
-  padding: 8px 10px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  background: rgba(255, 255, 255, 0.92);
-}
-
-.flow-arrow {
-  color: var(--orange);
-  font-weight: 700;
-}
-
-.narrative-note {
-  font-size: 0.9rem;
-  line-height: 1.6;
-  color: #555;
-}
-
-.visual-overlay {
-  position: absolute;
-  border-radius: 999px;
-  filter: blur(10px);
-  opacity: 0.7;
-}
-
-.visual-overlay-one {
-  width: 180px;
-  height: 180px;
-  background: rgba(255, 69, 0, 0.14);
-  top: -30px;
-  right: -20px;
-}
-
-.visual-overlay-two {
-  width: 120px;
-  height: 120px;
-  background: rgba(255, 193, 7, 0.12);
-  bottom: 20px;
-  right: 60px;
-}
-
-.scroll-down-btn {
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--border);
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: var(--orange);
-  font-size: 1.2rem;
-  transition: all 0.2s;
-}
-
-.scroll-down-btn:hover {
-  border-color: var(--orange);
-}
-
-/* Dashboard 双栏布局 */
-.dashboard-section {
-  display: flex;
-  gap: 60px;
-  border-top: 1px solid var(--border);
-  padding-top: 60px;
-  align-items: flex-start;
-}
-
-.dashboard-section .left-panel,
-.dashboard-section .right-panel {
-  display: flex;
-  flex-direction: column;
-}
-
-/* 左侧面板 */
-.left-panel {
-  flex: 0.8;
-}
-
-.panel-header {
-  font-family: var(--font-mono);
+.policy-row label,
+.policy-textarea-wrap {
+  display: block;
+  color: #cbd5e1;
   font-size: 0.8rem;
-  color: #999;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 20px;
+  letter-spacing: 0.02em;
 }
 
-.status-dot {
-  color: var(--orange);
-  font-size: 0.8rem;
+.policy-row span,
+.policy-textarea-wrap span {
+  display: block;
+  margin-bottom: 6px;
 }
 
-.section-title {
-  font-size: 2rem;
-  font-weight: 520;
-  margin: 0 0 15px 0;
-}
-
-.section-desc {
-  color: var(--gray-text);
-  margin-bottom: 25px;
-  line-height: 1.6;
-}
-
-.metrics-row {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 15px;
-}
-
-.metric-card {
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: rgba(255, 255, 255, 0.8);
-  padding: 20px 30px;
-  min-width: 150px;
-}
-
-.metric-value {
-  font-family: var(--font-mono);
-  font-size: 1.8rem;
-  font-weight: 520;
-  margin-bottom: 5px;
-}
-
-.metric-label {
-  font-size: 0.85rem;
-  color: #999;
-}
-
-/* 项目模拟步骤介绍 */
-.steps-container {
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: rgba(255, 255, 255, 0.75);
-  padding: 30px;
-  position: relative;
-}
-
-.steps-header {
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  color: #999;
-  margin-bottom: 25px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.diamond-icon {
-  font-size: 1.2rem;
-  line-height: 1;
-}
-
-.workflow-list {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.workflow-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 20px;
-}
-
-.step-num {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  color: var(--black);
-  opacity: 0.3;
-}
-
-.step-info {
-  flex: 1;
-}
-
-.step-title {
-  font-weight: 520;
-  font-size: 1rem;
-  margin-bottom: 4px;
-}
-
-.step-desc {
-  font-size: 0.85rem;
-  color: var(--gray-text);
-}
-
-/* 右侧交互控制台 */
-.right-panel {
-  flex: 1.2;
-}
-
-.console-box {
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.07);
-  padding: 8px;
-}
-
-.console-section {
-  padding: 20px;
-}
-
-.console-section.btn-section {
-  padding-top: 0;
-}
-
-.console-header {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 15px;
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: #666;
-}
-
-.upload-zone {
-  border: 1px dashed #CCC;
-  height: 200px;
-  overflow-y: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s;
-  background: #FAFAFA;
-}
-
-.upload-zone.has-files {
-  align-items: flex-start;
-}
-
-.upload-zone:hover {
-  background: #F0F0F0;
-  border-color: #999;
-}
-
-.upload-placeholder {
-  text-align: center;
-}
-
-.upload-icon {
-  width: 40px;
-  height: 40px;
-  border: 1px solid #DDD;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 15px;
-  color: #999;
-}
-
-.upload-title {
-  font-weight: 500;
-  font-size: 0.9rem;
-  margin-bottom: 5px;
-}
-
-.upload-hint {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: #999;
-}
-
-.file-list {
+.policy-select,
+.policy-textarea-wrap textarea {
   width: 100%;
-  padding: 15px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.9);
+  color: #f8fafc;
+  padding: 10px;
+  font: inherit;
 }
 
-.file-item {
-  display: flex;
-  align-items: center;
-  background: var(--white);
-  padding: 8px 12px;
-  border: 1px solid #EEE;
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-}
-
-.file-name {
-  flex: 1;
-  margin: 0 10px;
-}
-
-.remove-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1.2rem;
-  color: #999;
-}
-
-.console-divider {
-  display: flex;
-  align-items: center;
-  margin: 10px 0;
-}
-
-.console-divider::before,
-.console-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: #EEE;
-}
-
-.console-divider span {
-  padding: 0 15px;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: #BBB;
-  letter-spacing: 1px;
-}
-
-.input-wrapper {
-  position: relative;
-  border: 1px solid #DDD;
-  background: #FAFAFA;
-}
-
-.scenario-grid {
-  display: grid;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.scenario-input {
-  width: 100%;
-  border: 1px solid #DDD;
-  background: #FFF;
-  padding: 12px 14px;
-  font-family: var(--font-mono);
-  font-size: 0.9rem;
-  line-height: 1.5;
-  outline: none;
-}
-
-.scenario-input:focus {
-  border-color: var(--orange);
-}
-
-.code-input {
-  width: 100%;
-  border: none;
-  background: transparent;
-  padding: 20px;
-  font-family: var(--font-mono);
-  font-size: 0.9rem;
-  line-height: 1.6;
+.policy-textarea-wrap textarea {
   resize: vertical;
-  outline: none;
-  min-height: 150px;
+  min-height: 112px;
 }
 
-.code-input.compact {
-  min-height: 110px;
-}
-
-.model-badge {
-  position: absolute;
-  bottom: 10px;
-  right: 15px;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: #AAA;
-}
-
-.model-note {
-  position: absolute;
-  bottom: 10px;
-  left: 15px;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: #777;
-}
-
-.start-engine-btn {
-  width: 100%;
-  background: var(--black);
-  color: var(--white);
-  border: none;
-  padding: 20px;
-  font-family: var(--font-mono);
+.policy-apply-btn {
+  border: 0;
+  background: linear-gradient(130deg, #38bdf8, #818cf8);
+  color: #0f172a;
+  border-radius: 12px;
+  font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
   font-weight: 700;
-  font-size: 1.1rem;
+  padding: 12px;
+  cursor: pointer;
+  transition: 180ms;
+}
+
+.policy-apply-btn:hover:not(:disabled) {
+  filter: brightness(1.07);
+}
+
+.policy-apply-btn:disabled {
+  background: #334155;
+  cursor: not-allowed;
+  color: #94a3b8;
+}
+
+.policy-status {
+  margin: 0;
+  color: #94a3b8;
+  display: grid;
+  gap: 2px;
+  font-size: 0.8rem;
+}
+
+.policy-status strong {
+  color: #e2e8f0;
+}
+
+.timeline-panel {
+  margin-bottom: 16px;
+  background: rgba(2, 6, 23, 0.42);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.timeline-head {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  letter-spacing: 1px;
-  position: relative;
+  margin-bottom: 8px;
+  color: #e2e8f0;
+}
+
+.timeline-head p {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  color: #94a3b8;
+}
+
+.timeline-head strong {
+  font-size: 0.78rem;
+  color: #f8fafc;
+}
+
+.timeline-chart-wrap {
+  background: rgba(15, 23, 42, 0.74);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 12px;
+  min-height: 220px;
+  display: flex;
+}
+
+.support-chart {
+  width: 100%;
+  min-height: 220px;
+}
+
+.timeline-metrics {
+  margin: 8px 0 0;
+  color: #94a3b8;
+  font-size: 0.78rem;
+}
+
+.detail-kicker {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+}
+
+.detail-head h2 {
+  margin: 8px 0 0;
+  color: #f8fafc;
+  font-size: 1.6rem;
+}
+
+.support-board {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.support-lead {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 0.95rem;
+}
+
+.support-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.support-stats article {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.support-stats p {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.74rem;
+  letter-spacing: 0.02em;
+}
+
+.support-stats strong {
+  display: block;
+  margin-top: 4px;
+  color: #f8fafc;
+}
+
+.support-title {
+  margin-top: 12px;
+  margin-bottom: 10px;
+  color: #e2e8f0;
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+.support-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.support-list li {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.support-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.84rem;
+}
+
+.support-meta strong {
+  font-size: 0.86rem;
+}
+
+.support-track {
+  margin-top: 8px;
+  width: 100%;
+  height: 10px;
+  background: #0f172a;
+  border-radius: 6px;
   overflow: hidden;
 }
 
-/* 可点击状态（非禁用） */
-.start-engine-btn:not(:disabled) {
-  background: var(--black);
-  border: 1px solid var(--black);
-  animation: pulse-border 2s infinite;
+.support-fill {
+  display: block;
+  height: 100%;
 }
 
-.start-engine-btn:hover:not(:disabled) {
-  background: var(--orange);
-  border-color: var(--orange);
-  transform: translateY(-2px);
+.resident-note {
+  background: rgba(30, 41, 59, 0.6);
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  padding: 12px;
+  color: #cbd5e1;
+  line-height: 1.6;
+  font-size: 0.88rem;
 }
 
-.start-engine-btn:active:not(:disabled) {
-  transform: translateY(0);
+.population-title {
+  margin-top: 6px;
+  color: #e2e8f0;
+  font-size: 0.92rem;
+  font-weight: 500;
 }
 
-.start-engine-btn:disabled {
-  background: #E5E5E5;
-  color: #999;
-  cursor: not-allowed;
-  transform: none;
-  border: 1px solid #E5E5E5;
+.population-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
 }
 
-/* 引导动画：微妙的边框脉冲 */
-@keyframes pulse-border {
-  0% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.2); }
-  70% { box-shadow: 0 0 0 6px rgba(0, 0, 0, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+.population-grid article {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  padding: 10px;
 }
 
-/* 响应式适配 */
-@media (max-width: 1024px) {
-  .dashboard-section {
-    flex-direction: column;
+.population-grid p {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.74rem;
+}
+
+.population-grid strong {
+  display: block;
+  margin-top: 4px;
+  color: #f8fafc;
+}
+
+.age-breakdown-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.age-breakdown-list li {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 10px;
+  row-gap: 2px;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  padding: 10px 12px;
+  align-items: center;
+}
+
+.age-breakdown-list span {
+  color: #cbd5e1;
+  font-size: 0.82rem;
+}
+
+.age-breakdown-list strong {
+  color: #f8fafc;
+  justify-self: end;
+  font-size: 0.84rem;
+}
+
+.age-breakdown-list small {
+  grid-column: 1 / -1;
+  color: #94a3b8;
+  font-size: 0.74rem;
+}
+
+.district-note {
+  margin: 0;
+  padding: 12px;
+  border: 1px dashed rgba(148, 163, 184, 0.26);
+  color: #94a3b8;
+  border-radius: 12px;
+  font-size: 0.86rem;
+}
+
+.support-empty {
+  margin: 0;
+  color: #94a3b8;
+}
+
+@media (max-width: 1200px) {
+  .main-grid {
+    grid-template-columns: 1fr;
   }
-  
-  .hero-section {
-    flex-direction: column;
-  }
-  
-  .hero-left {
-    padding-right: 0;
-    margin-bottom: 40px;
+}
+
+@media (max-width: 680px) {
+  .seoul-page {
+    padding: 18px 14px 36px;
   }
 
-  .hero-brief {
+  .step-tabs {
     grid-template-columns: 1fr;
   }
 
-  .hero-visual {
-    min-height: auto;
+  .map-shell {
+    transform: none;
   }
 
-  .visual-grid {
+  .seoul-map {
+    min-height: 420px;
+  }
+
+  .support-stats {
     grid-template-columns: 1fr;
   }
 
-  .scoreboard {
-    grid-row: auto;
+  .population-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .policy-row {
+    grid-template-columns: 1fr;
   }
 }
 </style>
