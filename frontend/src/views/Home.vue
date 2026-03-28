@@ -144,6 +144,13 @@
               >
                 데모로 채우기
               </button>
+              <button
+                v-if="latestRound > 0"
+                class="step-secondary-btn"
+                @click="setActiveStep(3)"
+              >
+                지금 바로 의견 보기로 이동
+              </button>
             </div>
           </div>
 
@@ -197,6 +204,10 @@
                 <div class="opinion-meta">
                   <span>{{ item.timeLabel }}</span>
                   <span>{{ item.platform }}</span>
+                  <span v-if="item.district">{{ item.district }}</span>
+                  <span v-if="item?.persona_profile?.traits?.length">
+                    {{ item.persona_profile.traits.join(', ') }}
+                  </span>
                 </div>
               </div>
             </article>
@@ -206,12 +217,13 @@
 
         <div v-if="selectedDistrict" class="district-snippet">
           <p class="district-snippet-head">
-            현재 구 성향
-            <strong>{{ selectedDistrict.profile.dominantParty }}</strong>
+            현재 구 시뮬레이션 성향
+            <strong>{{ selectedParty }} {{ getLivePartyShare(selectedDistrict).toFixed(1) }}%</strong>
           </p>
           <ul class="district-snippet-list">
             <li>선거인수: {{ toPopulation(selectedDistrict.profile.electorate) }}</li>
             <li>유효 투표수: {{ toPopulation(selectedDistrict.profile.validVotes) }}</li>
+            <li>구당 지지도 기준: {{ selectedParty }}</li>
             <li>투표율: {{ selectedDistrict.profile.turnoutPercent }}%</li>
             <li>
               등록인구: {{ formatPopulation(selectedDistrict.profile.populationProfile.population) }}
@@ -254,7 +266,13 @@ const electionMeta = ref(null)
 const populationMeta = ref(null)
 const activeStep = ref(1)
 const scenarioSaved = ref(false)
+const isDemoMode = ref(false)
 const opinionFeed = ref([])
+const districtLiveSupport = ref({})
+const simulationRounds = ref(12)
+const simulationRoundMs = ref(1250)
+const simulationPersonaPool = ref([])
+let demoTimer = null
 
 // 시뮬레이션/정책 패널
 const simulations = ref([])
@@ -267,80 +285,66 @@ const supportTimeline = ref([])
 const runStatus = ref(null)
 
 let runStatusTimer = null
-let timelineTimer = null
 
-const DEMO_TIMELINE = [
-  { round_num: 0, support_snapshot: 48.4 },
-  { round_num: 1, support_snapshot: 49.0 },
-  { round_num: 2, support_snapshot: 49.8 },
-  { round_num: 3, support_snapshot: 50.1 },
-  { round_num: 4, support_snapshot: 50.9 },
-  { round_num: 5, support_snapshot: 50.6 },
-  { round_num: 6, support_snapshot: 51.4 },
-  { round_num: 7, support_snapshot: 52.2 },
-  { round_num: 8, support_snapshot: 52.1 }
+const SIMULATION_PARTY_CONTEXTS = [
+  '더불어민주당',
+  '국민의힘',
+  '개혁신당',
+  '새로운미래',
+  '녹색정의당',
+  '무소속',
+  '기타'
 ]
 
-const DEMO_OPINIONS = [
+const PARTY_DEMO_TEMPLATES = [
   {
-    platform: 'twitter',
-    action_type: 'policy_clarification',
-    agent_name: '서울시민패널',
-    round_num: 8,
-    timestamp: DEMO_SAMPLE_DATA_BASE_TIME,
-    action_args: {
-      content: '교통혼잡 완화 공약이 현실적으로 실현 가능해 보여요. 구체적 일정표만 더 받으면 더 신뢰할 수 있을 듯.',
-      reasons: ['도심 혼잡 데이터 기반 정책 조합이 기존 사업과 충돌하지 않음', '단기 가시성과 중장기 계획이 동시에 제시됨'],
-      evidence: ['실시간 교통량 지표', '공공 교통시설 가동률']
+    id: 'single_parent',
+    name: '아이 엄마',
+    traits: ['양육 부담', '육아 지원 필요'],
+    ageGroups: ['20-29', '30-39'],
+    gender: ['여성'],
+    stanceProfile: {
+      policyBonus: { '주거': 0.18, '복지': 0.16, '교육': 0.12, '세금': -0.02 }
     }
   },
   {
-    platform: 'reddit',
-    action_type: 'pledge_release',
-    agent_name: '정책연구원',
-    round_num: 7,
-    timestamp: DEMO_SAMPLE_DATA_BASE_TIME,
-    action_args: {
-      content: '장기 대책형 주거 안정 패키지, 특히 청년 주거비 완화 조치가 핵심 핵심이 될 가능성이 큼.',
-      reasons: ['청년층 주거비 부담은 투표 성향 전환의 직접 변수', '현재 임대주택 수급 체계가 병목 구간에 있어 정책 보완이 큼'],
-      evidence: ['청년 체감 물가지수', '구별 임대 공실률']
+    id: 'commuter',
+    name: '장거리 통근자',
+    traits: ['출퇴근 피로', '교통 인프라 개선 선호'],
+    ageGroups: ['30-49', '40-59'],
+    gender: ['남성', '여성'],
+    stanceProfile: {
+      policyBonus: { '교통': 0.2, '주거': 0.02, '환경': 0.08, '안전': 0.05 }
     }
   },
   {
-    platform: 'twitter',
-    action_type: 'attack',
-    agent_name: '청년네트워크',
-    round_num: 6,
-    timestamp: DEMO_SAMPLE_DATA_BASE_TIME,
-    action_args: {
-      content: '정책 범위가 넓은데 우선순위가 보여지지 않아, 과도한 약속으로 보일 수 있음.',
-      reasons: ['핵심만 선별되는지 판단이 어려워 실행 부담이 커 보임'],
-      counter_arguments: ['예산의 우선순위 공개와 단계별 실행표 제시 필요'],
-      evidence: ['최근 유권자 반응: “무엇부터 하는지 불명확”']
+    id: 'youth_worker',
+    name: '청년 노동자',
+    traits: ['채용 안정', '생계 비용 민감'],
+    ageGroups: ['20-39'],
+    gender: ['남성', '여성'],
+    stanceProfile: {
+      policyBonus: { '일자리': 0.22, '주거': 0.15, '교육': 0.05, '복지': 0.09 }
     }
   },
   {
-    platform: 'reddit',
-    action_type: 'debate_response',
-    agent_name: '시민간담회',
-    round_num: 6,
-    timestamp: DEMO_SAMPLE_DATA_BASE_TIME,
-    action_args: {
-      content: '토론에서 반박 포인트가 생길 때 대응 논리가 탄탄해 보이면 지지율 하방 압박이 줄어듦.',
-      reasons: ['논리 비약을 줄이면 중립층 설득 가능'],
-      evidence: ['찬반 토론 비중 상승', '반론 정리 지표 개선']
+    id: 'senior_resident',
+    name: '장년 거주자',
+    traits: ['복지 안정', '의료 접근성'],
+    ageGroups: ['50+'],
+    gender: ['남성', '여성'],
+    stanceProfile: {
+      policyBonus: { '건강': 0.18, '안전': 0.12, '교통': 0.08, '복지': 0.1 }
     }
   },
   {
-    platform: 'twitter',
-    action_type: 'apology',
-    agent_name: '정책메신저',
-    round_num: 5,
-    timestamp: DEMO_SAMPLE_DATA_BASE_TIME,
-    action_args: {
-      content: '예상치 못한 지적 포인트에 대해 해명안을 업데이트함. 반응 완만히 회복.',
-      reasons: ['오해를 줄이기 위해 수치와 실행시한을 공개'],
-      evidence: ['SNS 부정 언급 감도 감소']
+    id: 'entrepreneur',
+    name: '소상공인',
+    traits: ['규제 완화', '세제 민감도'],
+    ageGroups: ['20-59'],
+    gender: ['남성', '여성'],
+    stanceProfile: {
+      policyBonus: { '세금': 0.16, '일자리': 0.09, '주거': -0.08, '교통': 0.02 }
     }
   }
 ]
@@ -474,12 +478,52 @@ const setPartyFilter = (partyId) => {
   drawMap()
 }
 
+const clamp = (value, min, max) => Math.max(min, Math.min(max, value))
+
+const currentPartyForMap = computed(() => {
+  if (activeParty.value !== 'all') return activeParty.value
+  if (selectedParty.value) return selectedParty.value
+  return '더불어민주당'
+})
+
+const getDistrictSupportByParty = (feature, party = null) => {
+  const targetParty = party || selectedParty.value
+  const baseProfile = feature?.profile || {}
+  const support = Array.isArray(baseProfile.support)
+    ? baseProfile.support.find((item) => item.party === targetParty)?.percent
+    : 0
+  return Number(support || 0)
+}
+
+const districtPartyBaselineShare = (feature) => {
+  const profile = feature?.profile || {}
+  const base = profile?.support?.find((item) => item.party === selectedParty.value)
+  return Number(base?.percent || 0)
+}
+
+const getLivePartyShare = (feature) => {
+  const code = feature?.properties?.code
+  if (!code) return districtPartyBaselineShare(feature)
+  const live = districtLiveSupport.value[code]
+  if (typeof live === 'number' && Number.isFinite(live)) {
+    return clamp(live, 0, 100)
+  }
+  return districtPartyBaselineShare(feature)
+}
+
+const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)]
+const inferPopulationWeight = (district) => {
+  const profile = district?.profile || {}
+  const electorate = Number(profile.electorate || 0)
+  return electorate > 0 ? electorate : Number(profile.populationProfile?.population || 10000)
+}
+
 const selectedSimulation = computed(() => {
   return simulations.value.find((item) => item.simulation_id === selectedSimulationId.value) || null
 })
 
 const isSimulationRunning = computed(() => {
-  return ['running', 'starting'].includes(runStatus.value?.runner_status)
+  return demoTimer || ['running', 'starting'].includes(runStatus.value?.runner_status)
 })
 
 const setActiveStep = (step) => {
@@ -487,10 +531,212 @@ const setActiveStep = (step) => {
   if (
     step === 2 &&
     !supportTimeline.value.length &&
+    !isDemoMode.value &&
     !isSimulationRunning.value
   ) {
     loadDemoData()
   }
+  if (step === 2 || step === 3) {
+    activeParty.value = selectedParty.value || 'all'
+  }
+}
+
+const campaignSentimentSignal = (text = '') => {
+  const normalized = String(text || '').toLowerCase()
+  const positive = ['복지', '주거', '교육', '교통', '일자리', '안전', '환경', '안정', '청년']
+  const negative = ['감세', '세금', '비용', '증가', '실행', '위험', '불안']
+  let score = 0
+
+  positive.forEach((word) => {
+    if (normalized.includes(word)) score += 0.12
+  })
+  negative.forEach((word) => {
+    if (normalized.includes(word)) score -= 0.06
+  })
+
+  return clamp(score, -0.35, 0.35)
+}
+
+const buildPersonaText = (persona, policy = '') => {
+  const policySignal = campaignSentimentSignal(policy)
+  return `${persona.ageBand} ${persona.gender}, ${persona.homeDistrict}의 ${persona.personaName} | ${persona.traits.join(' · ')} | 기초 지지도:${persona.influenceBias.toFixed(2)} / 정책 반영:${policySignal.toFixed(2)}`
+}
+
+const buildPersonaProfiles = () => {
+  const profiles = []
+
+  districtFeatures.value.forEach((district) => {
+    const baseShare = getDistrictSupportByParty(district, selectedParty.value)
+    const districtName = district.profile?.name || district.properties?.name || '서울'
+    const districtCode = district.properties?.code
+    const count = Math.max(10, Math.min(24, Math.round((district.populationProfile?.population || 12000) / 5000)))
+
+    for (let i = 0; i < count; i++) {
+      const tpl = pickRandom(PARTY_DEMO_TEMPLATES)
+      const base = clamp((baseShare - 50) / 100, -0.55, 0.55)
+      const policyBias = campaignSentimentSignal(campaignText.value) * 0.5
+      const traitScore = (Math.random() - 0.5) * 0.3
+      profiles.push({
+        id: `${districtCode}-${tpl.id}-${i}`,
+        code: districtCode,
+        homeDistrict: districtName,
+        personaName: tpl.name,
+        ageBand: pickRandom(tpl.ageGroups),
+        gender: pickRandom(tpl.gender),
+        traits: tpl.traits,
+        template: tpl,
+        influenceBias: clamp(base + traitScore + policyBias, -1.1, 1.1)
+      })
+    }
+  })
+
+  simulationPersonaPool.value = profiles
+  return profiles
+}
+
+const seedDistrictSupportState = () => {
+  const seed = {}
+  districtFeatures.value.forEach((district) => {
+    const code = district.properties?.code
+    if (code) {
+      seed[code] = clamp(getDistrictSupportByParty(district, selectedParty.value), 0, 100)
+    }
+  })
+  districtLiveSupport.value = seed
+}
+
+const aggregateCitySupport = () => {
+  let weighted = 0
+  let sumWeight = 0
+
+  districtFeatures.value.forEach((district) => {
+    const code = district.properties?.code
+    if (!code) return
+    const share = getLivePartyShare(district)
+    const weight = inferPopulationWeight(district)
+    weighted += share * weight
+    sumWeight += weight
+  })
+
+  return sumWeight > 0 ? clamp(weighted / sumWeight, 0, 100) : 50
+}
+
+const simulateOpinionRound = (round) => {
+  if (!simulationPersonaPool.value.length) {
+    return { actors: [], districtDelta: {} }
+  }
+
+  const count = Math.max(4, Math.min(9, Math.round(simulationPersonaPool.value.length / 8)))
+  const now = new Date().toISOString()
+  const districtDelta = {}
+  const actors = []
+  const templates = [
+    '정책 효익이 지역 통근자에게 체감되면 지지가 안정적으로 붙을 가능성이 높아요.',
+    '구체 일정표와 우선순위가 보이면 신뢰가 올라갑니다.',
+    '너무 큰 폭의 약속은 오히려 반발을 만들 수 있어요.',
+    '가족·돌봄 비용 부담을 줄이면 공감도가 큽니다.',
+    '현장 예산을 먼저 제시해야 대중이 움직입니다.',
+    '전면 부정보다 개선형 보완안이 훨씬 설득력이 큽니다.'
+  ]
+
+  for (let i = 0; i < count; i++) {
+    const actor = pickRandom(simulationPersonaPool.value)
+    if (!actor || !actor.code) continue
+    const tplBonus = Object.values(actor.template?.stanceProfile?.policyBonus || {}).reduce((sum, value) => sum + Number(value || 0), 0)
+    const actionScore = clamp((actor.influenceBias * 0.8) + (tplBonus * 0.5) + (campaignSentimentSignal(campaignText.value) * 1.3) + (Math.random() - 0.5) * 0.9, -2.2, 2.2)
+    const delta = actionScore * 0.22
+    const prev = getLivePartyShare({ properties: { code: actor.code }, profile: districtFeatures.value.find((district) => district.properties?.code === actor.code)?.profile })
+    const next = clamp(prev + delta, 3, 96)
+    districtDelta[actor.code] = next
+
+    const actionType = actionScore >= 0.55 ? 'endorsement' : actionScore <= -0.4 ? 'attack' : 'debate_response'
+    actors.push({
+      party: selectedParty.value,
+      platform: Math.random() > 0.5 ? 'reddit' : 'twitter',
+      action_type: actionType,
+      agent_id: actor.id,
+      agent_name: `${actor.homeDistrict} ${actor.personaName}`,
+      district: actor.homeDistrict,
+      round_num: round,
+      timestamp: now,
+      action_args: {
+        content: `${buildPersonaText(actor, campaignText.value)} ${pickRandom(templates)}`,
+        reasons: [
+          `성향 점수 ${(actor.influenceBias).toFixed(2)}`,
+          `정책 반응점수 ${(campaignSentimentSignal(campaignText.value)).toFixed(2)}`
+        ],
+        evidence: [
+          `구 ${actor.homeDistrict} 토론 피드 반응`
+        ],
+        district_focus: actor.homeDistrict
+      }
+    })
+  }
+
+  const merged = { ...districtLiveSupport.value }
+  Object.entries(districtDelta).forEach(([code, next]) => {
+    merged[code] = next
+  })
+  districtLiveSupport.value = merged
+
+  return {
+    actors,
+    districtDelta
+  }
+}
+
+const stopDemoEngine = () => {
+  if (demoTimer) {
+    clearInterval(demoTimer)
+    demoTimer = null
+  }
+}
+
+const startDemoEngine = () => {
+  if (!districtFeatures.value.length) return
+  isDemoMode.value = true
+  buildPersonaProfiles()
+  seedDistrictSupportState()
+
+  const maxRound = Number(simulationRounds.value || 12)
+  const start = Number(aggregateCitySupport().toFixed(2))
+  supportTimeline.value = [{ round_num: 0, support_snapshot: start }]
+
+  opinionFeed.value = []
+  runStatus.value = {
+    runner_status: 'running',
+    current_round: 0,
+    total_rounds: maxRound
+  }
+  scenarioMessage.value = '데모 디베이트 엔진이 시작됩니다. 지지도 및 의견을 실시간으로 생성합니다.'
+  let round = 1
+  drawSupportChart()
+  drawMap()
+  stopDemoEngine()
+
+  demoTimer = setInterval(() => {
+    const { actors } = simulateOpinionRound(round)
+    const current = aggregateCitySupport()
+    const prev = supportTimeline.value[supportTimeline.value.length - 1]?.support_snapshot ?? current
+    const drift = clamp(prev + (Math.random() - 0.5) * 0.9 + campaignSentimentSignal(campaignText.value), 0, 100)
+    supportTimeline.value = [...supportTimeline.value, { round_num: round, support_snapshot: Number(drift.toFixed(2)) }]
+    opinionFeed.value = normalizeOpinionItems([...actors, ...opinionFeed.value]).slice(0, 120)
+
+    runStatus.value = {
+      ...(runStatus.value || {}),
+      runner_status: (round >= maxRound ? 'completed' : 'running'),
+      current_round: round
+    }
+
+    drawSupportChart()
+    drawMap()
+
+  if (round >= maxRound) {
+      stopDemoEngine()
+      scenarioMessage.value = '데모 시뮬레이션이 완료되었습니다.'
+    }
+    round += 1
+  }, Number(simulationRoundMs.value))
 }
 
 const actionDisplayName = (actionType = '') => {
@@ -682,36 +928,22 @@ const normalizeOpinionItems = (items = []) => {
 }
 
 const loadDemoData = () => {
-  supportTimeline.value = DEMO_TIMELINE.map((item, index) => ({
-    round_num: item.round_num,
-    support_snapshot: Number(item.support_snapshot || 50) + (index * 0)
-  }))
-
-  opinionFeed.value = normalizeOpinionItems(DEMO_OPINIONS.map((item, index) => ({
-    ...item,
-    timestamp: new Date(new Date(item.timestamp).getTime() - (DEMO_OPINIONS.length - index) * 1000 * 60).toISOString()
-  })))
-
-  runStatus.value = {
-    ...(runStatus.value || {}),
-    runner_status: 'completed',
-    current_round: DEMO_TIMELINE[DEMO_TIMELINE.length - 1]?.round_num || 0
-  }
-
-  scenarioMessage.value = '데모 데이터로 지지도 추세와 의견 피드를 채웠습니다.'
+  isDemoMode.value = true
+  activeParty.value = selectedParty.value || '더불어민주당'
+  simulationRounds.value = 8
+  startDemoEngine()
+  scenarioMessage.value = '데모 데이터로 지지도 추세와 의견 피드를 즉시 생성합니다.'
   drawSupportChart()
 }
 
 const stopRealtimePolling = () => {
+  stopDemoEngine()
+
   if (runStatusTimer) {
     clearInterval(runStatusTimer)
     runStatusTimer = null
   }
 
-  if (timelineTimer) {
-    clearInterval(timelineTimer)
-    timelineTimer = null
-  }
 }
 
 const waitUntilPrepared = async (simulationId, taskId = null) => {
@@ -784,6 +1016,7 @@ const pollSimulationStatus = async () => {
 }
 
 const startRealtimePolling = () => {
+  isDemoMode.value = false
   stopRealtimePolling()
   runStatusTimer = setInterval(() => {
     pollSimulationStatus()
@@ -817,7 +1050,13 @@ const loadSimulationDetails = async (simulationId) => {
     selectedParty.value = scenarioPartyOptions.value[0]
   }
 
+  if (!selectedParty.value) {
+    selectedParty.value = SIMULATION_PARTY_CONTEXTS[0]
+  }
+  activeParty.value = selectedParty.value
+
   scenarioSaved.value = false
+  isDemoMode.value = false
 
   runStatus.value = {
     runner_status: data?.status || 'idle'
@@ -855,6 +1094,7 @@ const saveScenario = async () => {
       selected_party: selectedParty.value,
       campaign_action_brief: campaignText.value
     })
+    activeParty.value = selectedParty.value
     scenarioSaved.value = true
     scenarioMessage.value = '시나리오가 저장되었습니다. 다음 단계에서 실행해 주세요.'
     activeStep.value = 2
@@ -907,14 +1147,16 @@ const startSimulationRun = async () => {
     activeStep.value = 2
   } catch (e) {
     scenarioMessage.value = `실행 중 오류: ${e?.message || '알 수 없는 오류'}`
-    loadDemoData()
-    stopRealtimePolling()
+    startDemoEngine()
   } finally {
     scenarioLoading.value = false
   }
 }
 
 const refreshOpinionFeed = async () => {
+  if (isDemoMode.value) {
+    return
+  }
   if (!selectedSimulationId.value) return
 
   try {
@@ -1060,9 +1302,14 @@ const drawMap = async () => {
     .attr('d', path)
     .attr('data-code', (d) => d.properties.code)
     .attr('fill', (d) => {
-      const party = d.profile?.dominantParty || '기타'
-      const dimmed = activeParty.value !== 'all' && party !== activeParty.value
-      return dimmed ? d3.color(partyColor(party)).copy({ opacity: 0.25 }) : partyColor(party)
+      const targetParty = currentPartyForMap.value
+      const party = targetParty || d.profile?.dominantParty || '기타'
+      const raw = d3.color(partyColor(party)) || d3.color('#94A3B8')
+      const share = getLivePartyShare(d)
+      const intensity = clamp(0.2 + (share / 100) * 0.75, 0.18, 0.95)
+      const dimmed = activeParty.value !== 'all' && targetParty !== 'all' && targetParty && party !== activeParty.value
+      raw.opacity = dimmed ? 0.2 : intensity
+      return raw.toString()
     })
     .attr('stroke', '#ffffffd9')
     .attr('stroke-width', 1.2)
@@ -1082,7 +1329,8 @@ const drawMap = async () => {
 
   districts.each((feature, index, nodes) => {
     const isActive = feature.properties.code === selectedCode.value
-    const isFiltered = activeParty.value === 'all' || feature.profile?.dominantParty === activeParty.value
+    const compareParty = currentPartyForMap.value
+    const isFiltered = activeParty.value === 'all' || compareParty === 'all' || feature.profile?.dominantParty === activeParty.value || getLivePartyShare(feature) > 0
     const node = d3.select(nodes[index])
     node.classed('is-selected', isActive)
     node.classed('is-filtered', isFiltered)
@@ -1099,7 +1347,7 @@ const drawMap = async () => {
     .join('text')
     .attr('text-anchor', 'middle')
     .attr('dy', '.35em')
-    .text((d) => d.profile ? d.profile.dominantParty : '기타')
+    .text((d) => `${Math.round(getLivePartyShare(d))}%`)
     .attr('font-size', '10px')
     .attr('font-family', 'JetBrains Mono, monospace')
     .attr('fill', '#0f172a')
@@ -1195,6 +1443,7 @@ const loadMapData = async () => {
 
 onMounted(() => {
   Promise.all([loadMapData(), loadSimulations()])
+  activeParty.value = selectedParty.value
 })
 
 onUnmounted(() => {
@@ -1209,6 +1458,7 @@ watch(() => [activeParty.value, selectedCode.value], () => {
 
 watch(() => selectedSimulationId.value, async (value) => {
   if (!value) return
+  isDemoMode.value = false
   stopRealtimePolling()
   await loadSimulationDetails(value)
   scenarioMessage.value = ''
@@ -1225,8 +1475,14 @@ watch(() => supportTimeline.value, () => {
 })
 
 watch(() => selectedParty.value, () => {
+  if (isDemoMode.value) {
+    activeParty.value = selectedParty.value
+    drawMap()
+  }
   if (!supportTimeline.value.length) return
-  pollSimulationStatus()
+  if (!isDemoMode.value) {
+    pollSimulationStatus()
+  }
   scenarioSaved.value = false
 })
 </script>
