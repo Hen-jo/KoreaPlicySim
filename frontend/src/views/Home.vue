@@ -128,15 +128,23 @@
               <p class="section-kicker">실시간 지지도 변화</p>
               <strong>{{ selectedParty }} 기준</strong>
             </div>
-            <button
-              class="step-secondary-btn"
-              :disabled="scenarioLoading || !selectedSimulationId || !selectedParty"
-              @click="startSimulationRun"
-            >
-              {{
-                isSimulationRunning ? '실행 중...' : '지금 실행'
-              }}
-            </button>
+            <div class="step-actions">
+              <button
+                class="step-primary-btn"
+                :disabled="scenarioLoading || !selectedSimulationId || !selectedParty"
+                @click="startSimulationRun"
+              >
+                {{
+                  isSimulationRunning ? '실행 중...' : '지금 실행'
+                }}
+              </button>
+              <button
+                class="step-secondary-btn"
+                @click="loadDemoData"
+              >
+                데모로 채우기
+              </button>
+            </div>
           </div>
 
           <div class="timeline-chart-wrap">
@@ -222,6 +230,7 @@ const mapWrap = ref(null)
 const loading = ref(true)
 const error = ref('')
 const districtFeatures = ref([])
+const DEMO_SAMPLE_DATA_BASE_TIME = new Date().toISOString()
 const activeParty = ref('all')
 const supportChartSvg = ref(null)
 const selectedCode = ref('')
@@ -243,6 +252,61 @@ const runStatus = ref(null)
 
 let runStatusTimer = null
 let timelineTimer = null
+
+const DEMO_TIMELINE = [
+  { round_num: 0, support_snapshot: 48.4 },
+  { round_num: 1, support_snapshot: 49.0 },
+  { round_num: 2, support_snapshot: 49.8 },
+  { round_num: 3, support_snapshot: 50.1 },
+  { round_num: 4, support_snapshot: 50.9 },
+  { round_num: 5, support_snapshot: 50.6 },
+  { round_num: 6, support_snapshot: 51.4 },
+  { round_num: 7, support_snapshot: 52.2 },
+  { round_num: 8, support_snapshot: 52.1 }
+]
+
+const DEMO_OPINIONS = [
+  {
+    platform: 'twitter',
+    action_type: 'policy_clarification',
+    agent_name: '서울시민패널',
+    round_num: 8,
+    timestamp: DEMO_SAMPLE_DATA_BASE_TIME,
+    action_args: { content: '교통혼잡 완화 공약이 현실적으로 실현 가능해 보여요. 구체적 일정표만 더 받으면 더 신뢰할 수 있을 듯.' }
+  },
+  {
+    platform: 'reddit',
+    action_type: 'pledge_release',
+    agent_name: '정책연구원',
+    round_num: 7,
+    timestamp: DEMO_SAMPLE_DATA_BASE_TIME,
+    action_args: { content: '장기 대책형 주거 안정 패키지, 특히 청년 주거비 완화 조치가 핵심 핵심이 될 가능성이 큼.' }
+  },
+  {
+    platform: 'twitter',
+    action_type: 'attack',
+    agent_name: '청년네트워크',
+    round_num: 6,
+    timestamp: DEMO_SAMPLE_DATA_BASE_TIME,
+    action_args: { content: '정책 범위가 넓은데 우선순위가 보여지지 않아, 과도한 약속으로 보일 수 있음.' }
+  },
+  {
+    platform: 'reddit',
+    action_type: 'debate_response',
+    agent_name: '시민간담회',
+    round_num: 6,
+    timestamp: DEMO_SAMPLE_DATA_BASE_TIME,
+    action_args: { content: '토론에서 반박 포인트가 생길 때 대응 논리가 탄탄해 보이면 지지율 하방 압박이 줄어듦.' }
+  },
+  {
+    platform: 'twitter',
+    action_type: 'apology',
+    agent_name: '정책메신저',
+    round_num: 5,
+    timestamp: DEMO_SAMPLE_DATA_BASE_TIME,
+    action_args: { content: '예상치 못한 지적 포인트에 대해 해명안을 업데이트함. 반응 완만히 회복.' }
+  }
+]
 
 const partyColorMap = {
   '더불어민주당': '#2563EB',
@@ -383,6 +447,13 @@ const isSimulationRunning = computed(() => {
 
 const setActiveStep = (step) => {
   activeStep.value = step
+  if (
+    step === 2 &&
+    !supportTimeline.value.length &&
+    !isSimulationRunning.value
+  ) {
+    loadDemoData()
+  }
 }
 
 const actionDisplayName = (actionType = '') => {
@@ -482,6 +553,27 @@ const normalizeOpinionItems = (items = []) => {
     key: `${item.timestamp || item.created_at || '0'}-${item.platform || 'platform'}-${item.agent_id || index}-${index}`,
     timeLabel: actionTimeLabel(item.timestamp || item.created_at)
   }))
+}
+
+const loadDemoData = () => {
+  supportTimeline.value = DEMO_TIMELINE.map((item, index) => ({
+    round_num: item.round_num,
+    support_snapshot: Number(item.support_snapshot || 50) + (index * 0)
+  }))
+
+  opinionFeed.value = normalizeOpinionItems(DEMO_OPINIONS.map((item, index) => ({
+    ...item,
+    timestamp: new Date(new Date(item.timestamp).getTime() - (DEMO_OPINIONS.length - index) * 1000 * 60).toISOString()
+  })))
+
+  runStatus.value = {
+    ...(runStatus.value || {}),
+    runner_status: 'completed',
+    current_round: DEMO_TIMELINE[DEMO_TIMELINE.length - 1]?.round_num || 0
+  }
+
+  scenarioMessage.value = '데모 데이터로 지지도 추세와 의견 피드를 채웠습니다.'
+  drawSupportChart()
 }
 
 const stopRealtimePolling = () => {
@@ -689,6 +781,7 @@ const startSimulationRun = async () => {
     activeStep.value = 2
   } catch (e) {
     scenarioMessage.value = `실행 중 오류: ${e?.message || '알 수 없는 오류'}`
+    loadDemoData()
     stopRealtimePolling()
   } finally {
     scenarioLoading.value = false
@@ -1157,6 +1250,8 @@ watch(() => selectedParty.value, () => {
 
 .step-actions {
   margin-top: 10px;
+  display: grid;
+  gap: 8px;
 }
 
 .step-primary-btn,
