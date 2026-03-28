@@ -171,20 +171,36 @@
             </button>
           </div>
 
-          <ul v-if="opinionFeed.length > 0" class="opinion-list">
-            <li v-for="item in opinionFeed" :key="item.key">
-              <div class="opinion-headline">
-                <span class="opinion-platform">{{ actionPlatformBadge(item.platform) }}</span>
-                <strong>{{ actionDisplayName(item.action_type) }}</strong>
+          <div v-if="opinionThreads.length > 0" class="opinion-list">
+            <article
+              v-for="thread in opinionThreads"
+              :key="thread.round"
+              class="opinion-thread"
+            >
+              <p class="opinion-thread-title">라운드 {{ thread.round }} 토론</p>
+              <div
+                v-for="item in thread.items"
+                :key="item.key"
+                class="opinion-card"
+              >
+                <div class="opinion-headline">
+                  <span class="opinion-platform">{{ actionPlatformBadge(item.platform) }}</span>
+                  <strong class="opinion-actor">{{ item.agent_name || `Agent ${item.agent_id || '미지정'}` }}</strong>
+                  <span class="opinion-action">{{ actionDisplayName(item.action_type) }}</span>
+                  <span class="opinion-stance" :class="opinionStanceClass(item)">{{ opinionStanceLabel(item) }}</span>
+                </div>
+                <p class="opinion-detail">{{ actionDisplayText(item) }}</p>
+                <ul v-if="actionReasons(item).length" class="opinion-reasons">
+                  <li v-for="reason in actionReasons(item)" :key="reason">{{ reason }}</li>
+                </ul>
+                <p v-else class="opinion-empty-reason">근거 문구가 없어 가상의 의견으로 처리했습니다.</p>
+                <div class="opinion-meta">
+                  <span>{{ item.timeLabel }}</span>
+                  <span>{{ item.platform }}</span>
+                </div>
               </div>
-              <p class="opinion-detail">{{ actionDisplayText(item) }}</p>
-              <div class="opinion-meta">
-                <span>라운드 {{ item.round_num }}</span>
-                <span>{{ item.timeLabel }}</span>
-                <span v-if="item.agent_name">{{ item.agent_name }}</span>
-              </div>
-            </li>
-          </ul>
+            </article>
+          </div>
           <p v-else class="support-empty">실행이 진행되면 이곳에 의견이 실시간으로 표시됩니다.</p>
         </section>
 
@@ -272,7 +288,11 @@ const DEMO_OPINIONS = [
     agent_name: '서울시민패널',
     round_num: 8,
     timestamp: DEMO_SAMPLE_DATA_BASE_TIME,
-    action_args: { content: '교통혼잡 완화 공약이 현실적으로 실현 가능해 보여요. 구체적 일정표만 더 받으면 더 신뢰할 수 있을 듯.' }
+    action_args: {
+      content: '교통혼잡 완화 공약이 현실적으로 실현 가능해 보여요. 구체적 일정표만 더 받으면 더 신뢰할 수 있을 듯.',
+      reasons: ['도심 혼잡 데이터 기반 정책 조합이 기존 사업과 충돌하지 않음', '단기 가시성과 중장기 계획이 동시에 제시됨'],
+      evidence: ['실시간 교통량 지표', '공공 교통시설 가동률']
+    }
   },
   {
     platform: 'reddit',
@@ -280,7 +300,11 @@ const DEMO_OPINIONS = [
     agent_name: '정책연구원',
     round_num: 7,
     timestamp: DEMO_SAMPLE_DATA_BASE_TIME,
-    action_args: { content: '장기 대책형 주거 안정 패키지, 특히 청년 주거비 완화 조치가 핵심 핵심이 될 가능성이 큼.' }
+    action_args: {
+      content: '장기 대책형 주거 안정 패키지, 특히 청년 주거비 완화 조치가 핵심 핵심이 될 가능성이 큼.',
+      reasons: ['청년층 주거비 부담은 투표 성향 전환의 직접 변수', '현재 임대주택 수급 체계가 병목 구간에 있어 정책 보완이 큼'],
+      evidence: ['청년 체감 물가지수', '구별 임대 공실률']
+    }
   },
   {
     platform: 'twitter',
@@ -288,7 +312,12 @@ const DEMO_OPINIONS = [
     agent_name: '청년네트워크',
     round_num: 6,
     timestamp: DEMO_SAMPLE_DATA_BASE_TIME,
-    action_args: { content: '정책 범위가 넓은데 우선순위가 보여지지 않아, 과도한 약속으로 보일 수 있음.' }
+    action_args: {
+      content: '정책 범위가 넓은데 우선순위가 보여지지 않아, 과도한 약속으로 보일 수 있음.',
+      reasons: ['핵심만 선별되는지 판단이 어려워 실행 부담이 커 보임'],
+      counter_arguments: ['예산의 우선순위 공개와 단계별 실행표 제시 필요'],
+      evidence: ['최근 유권자 반응: “무엇부터 하는지 불명확”']
+    }
   },
   {
     platform: 'reddit',
@@ -296,7 +325,11 @@ const DEMO_OPINIONS = [
     agent_name: '시민간담회',
     round_num: 6,
     timestamp: DEMO_SAMPLE_DATA_BASE_TIME,
-    action_args: { content: '토론에서 반박 포인트가 생길 때 대응 논리가 탄탄해 보이면 지지율 하방 압박이 줄어듦.' }
+    action_args: {
+      content: '토론에서 반박 포인트가 생길 때 대응 논리가 탄탄해 보이면 지지율 하방 압박이 줄어듦.',
+      reasons: ['논리 비약을 줄이면 중립층 설득 가능'],
+      evidence: ['찬반 토론 비중 상승', '반론 정리 지표 개선']
+    }
   },
   {
     platform: 'twitter',
@@ -304,7 +337,11 @@ const DEMO_OPINIONS = [
     agent_name: '정책메신저',
     round_num: 5,
     timestamp: DEMO_SAMPLE_DATA_BASE_TIME,
-    action_args: { content: '예상치 못한 지적 포인트에 대해 해명안을 업데이트함. 반응 완만히 회복.' }
+    action_args: {
+      content: '예상치 못한 지적 포인트에 대해 해명안을 업데이트함. 반응 완만히 회복.',
+      reasons: ['오해를 줄이기 위해 수치와 실행시한을 공개'],
+      evidence: ['SNS 부정 언급 감도 감소']
+    }
   }
 ]
 
@@ -486,6 +523,95 @@ const actionDisplayText = (action = {}) => {
 
   return '실시간 의견이 기록되었습니다.'
 }
+
+const actionReasons = (action = {}) => {
+  const args = action.action_args || {}
+  const result = action.result || {}
+  const reasons = []
+
+  if (Array.isArray(args?.reasons)) {
+    reasons.push(...args.reasons.filter(Boolean))
+  }
+
+  if (typeof args?.reason === 'string' && args.reason.trim()) {
+    reasons.push(args.reason.trim())
+  }
+  if (typeof args?.reasoning === 'string' && args.reasoning.trim()) {
+    reasons.push(args.reasoning.trim())
+  }
+  if (typeof result?.reason === 'string' && result.reason.trim()) {
+    reasons.push(result.reason.trim())
+  }
+  if (typeof result?.reasoning === 'string' && result.reasoning.trim()) {
+    reasons.push(result.reasoning.trim())
+  }
+
+  if (Array.isArray(args?.evidence)) {
+    args.evidence.forEach((item) => {
+      if (item) reasons.push(`근거: ${String(item)}`)
+    })
+  }
+  if (Array.isArray(args?.counter_arguments)) {
+    args.counter_arguments.forEach((item) => {
+      if (item) reasons.push(`반론: ${String(item)}`)
+    })
+  }
+
+  return reasons.map((reason) => String(reason).trim()).filter(Boolean)
+}
+
+const opinionStanceLabel = (action = {}) => {
+  const content = (
+    action?.action_args?.content ||
+    action?.action_args?.text ||
+    action?.action_args?.message ||
+    action?.result?.content ||
+    action?.result?.message ||
+    action?.action_type ||
+    ''
+  ).toString().toLowerCase()
+
+  const positiveKeywords = ['찬성', '환영', '호응', '긍정', '좋', '동의', '지지', '지원', '유리', '개선', '완화']
+  const negativeKeywords = ['우려', '반대', '비판', '불신', '문제', '불만', '부담', '위험', '반발', '비난', '우려감']
+
+  if (negativeKeywords.some((key) => content.includes(key))) return '비판'
+  if (positiveKeywords.some((key) => content.includes(key))) return '지지'
+  return '중립'
+}
+
+const opinionStanceClass = (action = {}) => {
+  const stance = opinionStanceLabel(action)
+  if (stance === '지지') return 'stance-boost'
+  if (stance === '비판') return 'stance-risk'
+  return 'stance-neutral'
+}
+
+const opinionThreads = computed(() => {
+  const grouped = new Map()
+  opinionFeed.value.forEach((item) => {
+    const roundKey = Number(item.round_num || 0)
+    if (!grouped.has(roundKey)) {
+      grouped.set(roundKey, [])
+    }
+    grouped.get(roundKey).push(item)
+  })
+
+  return Array.from(grouped.entries())
+    .map(([round, items]) => ({
+      round,
+      items: items
+        .slice()
+        .sort((a, b) => {
+          const t1 = new Date(a.timestamp || 0).getTime()
+          const t2 = new Date(b.timestamp || 0).getTime()
+          if (Number.isNaN(t1) && Number.isNaN(t2)) return 0
+          if (Number.isNaN(t1)) return 1
+          if (Number.isNaN(t2)) return -1
+          return t1 - t2
+        })
+    }))
+    .sort((a, b) => b.round - a.round)
+})
 
 const actionPlatformBadge = (platform = '') => {
   if (platform === 'reddit') return 'Reddit'
@@ -1291,17 +1417,36 @@ watch(() => selectedParty.value, () => {
 .opinion-list {
   margin: 10px 0 0;
   padding: 0;
-  list-style: none;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.opinion-list li {
+.opinion-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed rgba(148, 163, 184, 0.2);
+}
+
+.opinion-thread-title {
+  margin: 0;
+  color: #e2e8f0;
+  font-weight: 600;
+  font-size: 0.76rem;
+  letter-spacing: 0.05em;
+  color: #cbd5e1;
+}
+
+.opinion-card {
   background: rgba(15, 23, 42, 0.58);
   border: 1px solid rgba(148, 163, 184, 0.22);
   border-radius: 10px;
   padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .opinion-headline {
@@ -1311,9 +1456,37 @@ watch(() => selectedParty.value, () => {
   font-size: 0.82rem;
 }
 
-.opinion-headline strong {
+.opinion-actor {
   color: #f8fafc;
   font-weight: 600;
+}
+
+.opinion-action {
+  color: #a5b4fc;
+  font-size: 0.72rem;
+}
+
+.opinion-stance {
+  font-size: 0.68rem;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.stance-boost {
+  background: rgba(34, 197, 94, 0.16);
+  color: #86efac;
+}
+
+.stance-risk {
+  background: rgba(239, 68, 68, 0.16);
+  color: #fda4af;
+}
+
+.stance-neutral {
+  background: rgba(148, 163, 184, 0.16);
+  color: #cbd5e1;
 }
 
 .opinion-platform {
@@ -1332,6 +1505,23 @@ watch(() => selectedParty.value, () => {
   line-height: 1.5;
   font-size: 0.82rem;
   white-space: pre-wrap;
+}
+
+.opinion-reasons {
+  margin: 0;
+  padding: 0 0 0 14px;
+  list-style: disc;
+  color: #94a3b8;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.76rem;
+}
+
+.opinion-empty-reason {
+  margin: 2px 0 0;
+  font-size: 0.74rem;
+  color: #94a3b8;
 }
 
 .opinion-meta {
