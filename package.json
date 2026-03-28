@@ -7,9 +7,9 @@
     "setup:backend": "cd backend && if command -v uv >/dev/null 2>&1; then uv sync; else python3 -m pip install -r requirements.txt; fi",
     "setup:all": "npm run setup && npm run setup:backend",
     "dev": "concurrently --kill-others -n \"backend,frontend\" -c \"green,cyan\" \"npm run backend\" \"npm run frontend\"",
-    "backend": "cd backend && if command -v uv >/dev/null 2>&1; then uv run python run.py; else python3 run.py; fi",
-    "frontend": "cd frontend && npm run dev",
-    "build": "cd frontend && npm run build"
+    "backend": "cd backend && if ! python3 -c \"import flask\" >/dev/null 2>&1; then python3 -m pip install -r requirements.txt; fi && if command -v uv >/dev/null 2>&1; then uv run python run.py; else python3 run.py; fi",
+    "frontend": "cd frontend && npm install --no-audit --no-fund vite@5.4.0 @vitejs/plugin-vue@5.0.4 --save-dev && npx vite --host",
+    "build": "cd frontend && npm install --no-audit --no-fund vite@5.4.0 @vitejs/plugin-vue@5.0.4 --save-dev && npx vite build"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
